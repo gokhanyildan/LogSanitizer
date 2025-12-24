@@ -15,9 +15,20 @@
         Background="{DynamicResource MaterialDesignPaper}"
         FontFamily="{DynamicResource MaterialDesignFont}"
         Title="LogSanitizer v2.0 - Batch Processor" Height="600" Width="900"
+        Icon="{DynamicResource WindowIcon}"
         ResizeMode="CanResizeWithGrip">
 
     <Window.Resources>
+        <Geometry x:Key="WindowIconGeometry">F1 M 12,2C 15.86,2 19,5.13 19,9C 19,14.25 12,22 12,22C 12,22 5,14.25 5,9C 5,5.13 8.13,2 12,2 M 12,4C 9.24,4 7,6.24 7,9C 7,10.1 7.31,11.13 7.86,12C 9.81,10.92 12,10.21 12,10.21C 12,10.21 14.19,10.92 16.14,12C 16.69,11.13 17,10.1 17,9C 17,6.24 14.76,4 12,4 M 12,11.25C 10.58,11.69 9.36,12.47 8.38,13.5C 9.34,14.83 10.6,16 12,16.93C 13.4,16 14.66,14.83 15.62,13.5C 14.64,12.47 13.42,11.69 12,11.25Z</Geometry>
+        <DrawingImage x:Key="WindowIcon">
+            <DrawingImage.Drawing>
+                <GeometryDrawing Brush="{DynamicResource MaterialDesignBody}">
+                    <GeometryDrawing.Geometry>
+                        <StaticResource ResourceKey="WindowIconGeometry"/>
+                    </GeometryDrawing.Geometry>
+                </GeometryDrawing>
+            </DrawingImage.Drawing>
+        </DrawingImage>
         <converters:InverseBooleanConverter x:Key="InverseBoolConverter"/>
     </Window.Resources>
 
@@ -121,7 +132,7 @@
                         Style="{StaticResource MaterialDesignRaisedButton}"
                         Height="50" Width="200" FontSize="16">
                     <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="PlayCircleOutline" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                        <materialDesign:PackIcon Kind="SecurityNetwork" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center"/>
                         <TextBlock Text="Start Batch" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
