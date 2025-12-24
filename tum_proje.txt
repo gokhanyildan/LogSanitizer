@@ -1,0 +1,805 @@
+
+==========================================
+FILE: publish.ps1
+==========================================
+
+$ErrorActionPreference = "Stop"
+Set-Location $PSScriptRoot
+
+# Clean up previous release
+if (Test-Path "Release") { Remove-Item "Release" -Recurse -Force }
+New-Item -ItemType Directory -Force -Path "Release"
+
+# Publish CLI
+Write-Host "Publishing CLI..."
+dotnet publish "src\LogSanitizer.CLI\LogSanitizer.CLI.csproj" -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true -o "bin\Publish\CLI"
+Move-Item "bin\Publish\CLI\LogSanitizer.CLI.exe" "Release\LogSanitizer.CLI.exe"
+
+# Publish GUI
+Write-Host "Publishing GUI..."
+dotnet publish "src\LogSanitizer.GUI\LogSanitizer.GUI.csproj" -c Release -r win-x64 --self-contained true /p:PublishSingleFile=true -o "bin\Publish\GUI"
+Move-Item "bin\Publish\GUI\LogSanitizer.GUI.exe" "Release\LogSanitizer.GUI.exe"
+
+Write-Host "Done! Check the 'Release' folder."
+
+
+==========================================
+FILE: README.md
+==========================================
+
+# LogSanitizer
+
+## Description
+A GDPR-compliant log anonymization tool with Consistent Hashing. This tool allows you to sanitize sensitive information from log files while maintaining traceability through consistent hashing of specific data types.
+
+## Features
+- **Supported PII Types**: 
+  - IPv4 & IPv6 Addresses
+  - Email Addresses
+  - Credit Card Numbers
+  - Social Security Numbers (SSN)
+  - International Bank Account Numbers (IBAN)
+  - Domain\User Accounts
+  - Phone Numbers
+  - Hostnames & FQDNs
+- **Consistent Hashing**: Enables traceability for Users and IPs without revealing identity (SHA256 truncated).
+- **Dual Interface**: Available as both a Command Line Interface (CLI) and a Graphical User Interface (GUI).
+
+## Usage (CLI)
+
+Run the tool from the command line using the following arguments:
+
+```powershell
+# Basic usage (defaults to IPv4, Email, CreditCard)
+LogSanitizer.CLI.exe --input "C:\logs\app.log" --output "C:\logs\app_clean.log"
+
+# Specify targets and overwrite existing file
+LogSanitizer.CLI.exe --input "C:\logs\app.log" --output "C:\logs\app_clean.log" --overwrite --targets IPv4Address IPv6Address Email DomainUser
+```
+
+## Usage (GUI)
+
+The WPF-based GUI provides a user-friendly way to sanitize logs:
+1. **Input/Output**: Browse to select your source log file and destination path.
+2. **Options**: Check the boxes for the PII types you wish to sanitize (e.g., Email, DomainUser).
+3. **Start**: Click "Start Sanitization" to process the file. A progress bar will show the status.
+
+## Build Instructions
+
+To build the project from source, ensure you have the .NET 8 SDK installed and run:
+
+```powershell
+dotnet build
+```
+
+To create a release build (single-file executable), run the provided `publish.ps1` script.
+
+
+==========================================
+FILE: src\LogSanitizer.CLI\Program.cs
+==========================================
+
+using System.CommandLine;
+using LogSanitizer.Core.Enums;
+using LogSanitizer.Core.Models;
+using LogSanitizer.Core.Services;
+
+namespace LogSanitizer.CLI;
+
+class Program
+{
+    static async Task<int> Main(string[] args)
+    {
+        // 1. Define CLI Options
+        
+        // Input file path
+        var inputOption = new Option<FileInfo>(
+            name: "--input",
+            description: "The path to the source log file.")
+            { IsRequired = true };
+
+        // Output file path
+        var outputOption = new Option<FileInfo>(
+            name: "--output",
+            description: "The path where the sanitized file will be saved.")
+            { IsRequired = true };
+
+        // Overwrite permission
+        var overwriteOption = new Option<bool>(
+            name: "--overwrite",
+            description: "Overwrite the output file if it exists.",
+            getDefaultValue: () => false);
+
+        // Target PII types (allows selecting what to clean)
+        // Usage example: --targets Email IPv4Address
+        var targetsOption = new Option<List<PiiType>>(
+            name: "--targets",
+            description: "List of PII types to sanitize.",
+            getDefaultValue: () => new List<PiiType> { PiiType.IPv4Address, PiiType.Email, PiiType.CreditCard });
+
+        // 2. Create Root Command
+        var rootCommand = new RootCommand("LogSanitizer: GDPR Compliant Log Anonymization Tool");
+        rootCommand.AddOption(inputOption);
+        rootCommand.AddOption(outputOption);
+        rootCommand.AddOption(overwriteOption);
+        rootCommand.AddOption(targetsOption);
+
+        // 3. Define the Handler (The glue between CLI args and Core Logic)
+        rootCommand.SetHandler(async (input, output, overwrite, targets) =>
+        {
+            await RunSanitizationAsync(input, output, overwrite, targets);
+        }, inputOption, outputOption, overwriteOption, targetsOption);
+
+        // 4. Execute
+        return await rootCommand.InvokeAsync(args);
+    }
+
+    private static async Task RunSanitizationAsync(FileInfo input, FileInfo output, bool overwrite, List<PiiType> targets)
+    {
+        Console.WriteLine($"Starting sanitization...");
+        Console.WriteLine($"Source: {input.FullName}");
+        Console.WriteLine($"Target: {output.FullName}");
+        
+        // Configuration setup
+        var config = new SanitizationConfig
+        {
+            OverwriteOutput = overwrite,
+            TargetPiiTypes = targets,
+            MaskPlaceholder = "***" // Default mask
+        };
+
+        var processor = new LogProcessor(config);
+
+        try
+        {
+            // Simple text-based progress indicator
+            var progress = new Progress<double>(percent =>
+            {
+                // \r allows overwriting the same line
+                Console.Write($"\rProgress: {percent:F1}%");
+            });
+
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            
+            // Start the actual processing
+            await processor.ProcessFileAsync(input.FullName, output.FullName, progress);
+            
+            stopwatch.Stop();
+            Console.WriteLine($"\n\nDone! Processed in {stopwatch.Elapsed.TotalSeconds:F2} seconds.");
+            Console.WriteLine($"Check output at: {output.FullName}");
+        }
+        catch (Exception ex)
+        {
+            Console.ForegroundColor = ConsoleColor.Red;
+            Console.WriteLine($"\n\nERROR: {ex.Message}");
+            Console.ResetColor();
+        }
+    }
+}
+
+==========================================
+FILE: src\LogSanitizer.Core\Constants\RegexDefinitions.cs
+==========================================
+
+using System.Text.RegularExpressions;
+
+namespace LogSanitizer.Core.Constants;
+
+public static class RegexDefinitions
+{
+    // IPv4: Matches standard IP addresses (e.g., 192.168.1.1)
+    public static readonly Regex IPv4 = new Regex(
+        @"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+    // Email: Standard email pattern
+    public static readonly Regex Email = new Regex(
+        @"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+    // Credit Card: Basic 13-16 digit matching
+    public static readonly Regex CreditCard = new Regex(
+        @"\b(?:\d[ -]*?){13,16}\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+        
+    // Phone Number: Generic global phone match
+    public static readonly Regex PhoneNumber = new Regex(
+        @"\b\+?(\d[\d-. ]+)?(\([\d-. ]+\))?[\d-. ]+\d\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+    // FQDN: Matches domain-like structures (e.g., server.internal.corp)
+    public static readonly Regex FQDN = new Regex(
+        @"\b(?!\d+\.\d+\.\d+\.\d+)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
+
+    // Hostname: Matches words containing specific infrastructure keywords.
+    // Logic: Must be alphanumeric (with hyphens) AND contain 'SW', 'SRV', 'SERVER'.
+    // Examples: WEB-SRV-01, Core-SW, FileServer, APP_SRV
+    // Added IgnoreCase so it catches 'srv', 'Srv', 'SRV'.
+    public static readonly Regex Hostname = new Regex(
+        @"\b[a-zA-Z0-9-]*(?:SW|SRV|SERVER)[a-zA-Z0-9-]*\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
+
+    // IPv6: Matches standard IPv6 addresses
+    public static readonly Regex IPv6 = new Regex(
+        @"\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b|(?=(?:[0-9a-fA-F]{0,4}:){0,7}[0-9a-fA-F]{0,4}\b)(([0-9a-fA-F]{1,4}:){1,7}:|:(:[0-9a-fA-F]{1,4}){1,7})\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+    // SSN: US Social Security Number (XXX-XX-XXXX)
+    public static readonly Regex SSN = new Regex(
+        @"\b\d{3}-\d{2}-\d{4}\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+    // IBAN: International Bank Account Number
+    public static readonly Regex IBAN = new Regex(
+        @"\b[A-Z]{2}\d{2}[A-Z0-9]{4}\d{7}([A-Z0-9]?){0,16}\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+    // DomainUser: Matches DOMAIN\User format
+    public static readonly Regex DomainUser = new Regex(
+        @"\b[a-zA-Z0-9][a-zA-Z0-9-]{0,14}\\[a-zA-Z0-9._-]+\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+}
+
+==========================================
+FILE: src\LogSanitizer.Core\Enums\PiiType.cs
+==========================================
+
+namespace LogSanitizer.Core.Enums;
+
+public enum PiiType
+{
+    IPv4Address,
+    IPv6Address,
+    Email,
+    CreditCard,
+    SocialSecurityNumber,
+    PhoneNumber,
+    IBAN,
+    Hostname, // NetBIOS Name (e.g., SERVER01)
+    FQDN,      // Fully Qualified Domain Name (e.g., server01.corp.local)
+    DomainUser // Domain\User format
+}
+
+==========================================
+FILE: src\LogSanitizer.Core\Models\SanitizationConfig.cs
+==========================================
+
+using LogSanitizer.Core.Enums;
+
+namespace LogSanitizer.Core.Models;
+
+public class SanitizationConfig
+{
+    // If true, the output file will overwrite the existing one (use with caution)
+    public bool OverwriteOutput { get; set; } = false;
+
+    // List of PII types to detect and sanitize
+    public List<PiiType> TargetPiiTypes { get; set; } = new List<PiiType>();
+
+    // String to use when masking (e.g., "***")
+    public string MaskPlaceholder { get; set; } = "[REDACTED]";
+
+    // If true, uses consistent hashing for traceability instead of simple masking
+    public bool EnableHashing { get; set; } = true;
+
+    // Factory method for default safe configuration
+    public static SanitizationConfig Default => new SanitizationConfig
+    {
+        TargetPiiTypes = new List<PiiType> 
+        { 
+            PiiType.IPv4Address, 
+            PiiType.Email 
+        }
+    };
+}
+
+==========================================
+FILE: src\LogSanitizer.Core\Services\LogProcessor.cs
+==========================================
+
+using System.Text.RegularExpressions;
+using System.Security.Cryptography;
+using System.Text;
+using LogSanitizer.Core.Constants;
+using LogSanitizer.Core.Enums;
+using LogSanitizer.Core.Models;
+
+namespace LogSanitizer.Core.Services;
+
+public class LogProcessor
+{
+    private readonly SanitizationConfig _config;
+    private readonly Dictionary<PiiType, Regex> _activeRegexes;
+    private readonly Dictionary<string, string> _hashCache = new();
+
+    public LogProcessor(SanitizationConfig config)
+    {
+        _config = config;
+        _activeRegexes = InitializeRegexMap();
+    }
+
+    private Dictionary<PiiType, Regex> InitializeRegexMap()
+    {
+        var map = new Dictionary<PiiType, Regex>();
+
+        if (_config.TargetPiiTypes.Contains(PiiType.IPv4Address)) map.Add(PiiType.IPv4Address, RegexDefinitions.IPv4);
+        if (_config.TargetPiiTypes.Contains(PiiType.IPv6Address)) map.Add(PiiType.IPv6Address, RegexDefinitions.IPv6);
+        if (_config.TargetPiiTypes.Contains(PiiType.Email)) map.Add(PiiType.Email, RegexDefinitions.Email);
+        if (_config.TargetPiiTypes.Contains(PiiType.CreditCard)) map.Add(PiiType.CreditCard, RegexDefinitions.CreditCard);
+        if (_config.TargetPiiTypes.Contains(PiiType.SocialSecurityNumber)) map.Add(PiiType.SocialSecurityNumber, RegexDefinitions.SSN);
+        if (_config.TargetPiiTypes.Contains(PiiType.PhoneNumber)) map.Add(PiiType.PhoneNumber, RegexDefinitions.PhoneNumber);
+        if (_config.TargetPiiTypes.Contains(PiiType.IBAN)) map.Add(PiiType.IBAN, RegexDefinitions.IBAN);
+        if (_config.TargetPiiTypes.Contains(PiiType.FQDN)) map.Add(PiiType.FQDN, RegexDefinitions.FQDN);
+        if (_config.TargetPiiTypes.Contains(PiiType.Hostname)) map.Add(PiiType.Hostname, RegexDefinitions.Hostname);
+        if (_config.TargetPiiTypes.Contains(PiiType.DomainUser)) map.Add(PiiType.DomainUser, RegexDefinitions.DomainUser);
+        
+        return map;
+    }
+
+    public async Task ProcessFileAsync(string inputPath, string outputPath, IProgress<double>? progress = null)
+    {
+        if (!File.Exists(inputPath))
+            throw new FileNotFoundException($"Input file not found: {inputPath}");
+
+        string fullInputPath = Path.GetFullPath(inputPath);
+        string fullOutputPath = Path.GetFullPath(outputPath);
+
+        if (string.Equals(fullInputPath, fullOutputPath, StringComparison.OrdinalIgnoreCase))
+            throw new IOException("Input and output paths cannot be the same file. Please specify a different output path.");
+
+        if (File.Exists(outputPath) && !_config.OverwriteOutput)
+            throw new IOException($"Output file already exists: {outputPath}");
+
+        long totalBytes = new FileInfo(inputPath).Length;
+        long processedBytes = 0;
+
+        using (var reader = new StreamReader(inputPath))
+        using (var writer = new StreamWriter(outputPath))
+        {
+            string? line;
+            while ((line = await reader.ReadLineAsync()) != null)
+            {
+                string sanitizedLine = SanitizeLine(line);
+                await writer.WriteLineAsync(sanitizedLine);
+
+                if (progress != null)
+                {
+                    processedBytes += line.Length + Environment.NewLine.Length;
+                    double percent = (double)processedBytes / totalBytes * 100;
+                    progress.Report(percent);
+                }
+            }
+        }
+    }
+
+    private string SanitizeLine(string line)
+    {
+        string currentLine = line;
+
+        foreach (var entry in _activeRegexes)
+        {
+            if (_config.EnableHashing)
+            {
+                currentLine = entry.Value.Replace(currentLine, match => GetConsistentHash(match.Value));
+            }
+            else
+            {
+                currentLine = entry.Value.Replace(currentLine, _config.MaskPlaceholder);
+            }
+        }
+
+        return currentLine;
+    }
+
+    private string GetConsistentHash(string input)
+    {
+        if (_hashCache.TryGetValue(input, out var cachedHash))
+        {
+            return cachedHash;
+        }
+
+        using (var sha256 = SHA256.Create())
+        {
+            var bytes = Encoding.UTF8.GetBytes(input);
+            var hashBytes = sha256.ComputeHash(bytes);
+            
+            // Take first 8 bytes and convert to hex (16 characters)
+            var sb = new StringBuilder();
+            for (int i = 0; i < 8; i++)
+            {
+                sb.Append(hashBytes[i].ToString("X2"));
+            }
+            
+            var hash = $"ID-{sb}";
+            _hashCache[input] = hash;
+            return hash;
+        }
+    }
+}
+
+==========================================
+FILE: src\LogSanitizer.GUI\App.xaml.cs
+==========================================
+
+using System.Configuration;
+using System.Data;
+using System.Windows;
+
+namespace LogSanitizer.GUI;
+
+/// <summary>
+/// Interaction logic for App.xaml
+/// </summary>
+public partial class App : Application
+{
+    public App()
+    {
+        DispatcherUnhandledException += App_DispatcherUnhandledException;
+    }
+
+    protected override void OnStartup(StartupEventArgs e)
+    {
+        base.OnStartup(e);
+        
+        try
+        {
+            System.IO.File.AppendAllText("startup_trace.log", "OnStartup entered\n");
+            var mainWindow = new MainWindow();
+            this.MainWindow = mainWindow;
+            mainWindow.Show();
+            System.IO.File.AppendAllText("startup_trace.log", "MainWindow shown\n");
+        }
+        catch (Exception ex)
+        {
+            string errorMsg = $"Startup Error: {ex.Message}\n\nStack Trace:\n{ex.StackTrace}";
+            if (ex.InnerException != null)
+            {
+                errorMsg += $"\n\nInner Exception: {ex.InnerException.Message}";
+            }
+            System.IO.File.WriteAllText("startup_error.log", errorMsg);
+            MessageBox.Show(errorMsg, "Startup Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            Shutdown(1);
+        }
+    }
+
+    private void App_DispatcherUnhandledException(object sender, System.Windows.Threading.DispatcherUnhandledExceptionEventArgs e)
+    {
+        string errorMsg = $"An unhandled exception occurred: {e.Exception.Message}\n\nStack Trace:\n{e.Exception.StackTrace}";
+        if (e.Exception.InnerException != null)
+        {
+            errorMsg += $"\n\nInner Exception: {e.Exception.InnerException.Message}";
+        }
+        
+        System.IO.File.WriteAllText("error.log", errorMsg);
+        MessageBox.Show(errorMsg, "Application Error", MessageBoxButton.OK, MessageBoxImage.Error);
+        e.Handled = true;
+        Shutdown();
+    }
+}
+
+
+
+==========================================
+FILE: src\LogSanitizer.GUI\AssemblyInfo.cs
+==========================================
+
+using System.Windows;
+
+[assembly:ThemeInfo(
+    ResourceDictionaryLocation.None,            //where theme specific resource dictionaries are located
+                                                //(used if a resource is not found in the page,
+                                                // or application resource dictionaries)
+    ResourceDictionaryLocation.SourceAssembly   //where the generic resource dictionary is located
+                                                //(used if a resource is not found in the page,
+                                                // app, or any theme specific resource dictionaries)
+)]
+
+
+==========================================
+FILE: src\LogSanitizer.GUI\InverseBooleanConverter.cs
+==========================================
+
+using System;
+using System.Globalization;
+using System.Windows.Data;
+
+namespace LogSanitizer.GUI;
+
+[ValueConversion(typeof(bool), typeof(bool))]
+public class InverseBooleanConverter : IValueConverter
+{
+    public static InverseBooleanConverter Instance { get; } = new InverseBooleanConverter();
+
+    public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        if (targetType != typeof(bool) && targetType != typeof(bool?))
+            throw new InvalidOperationException("The target must be a boolean");
+
+        return !(bool)value;
+    }
+
+    public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+    {
+        throw new NotSupportedException();
+    }
+}
+
+==========================================
+FILE: src\LogSanitizer.GUI\MainWindow.xaml.cs
+==========================================
+
+using System.Windows;
+using LogSanitizer.GUI.ViewModels;
+
+namespace LogSanitizer.GUI;
+
+/// <summary>
+/// Interaction logic for MainWindow.xaml
+/// </summary>
+public partial class MainWindow : Window
+{
+    public MainWindow()
+    {
+        InitializeComponent();
+        DataContext = new MainViewModel();
+    }
+}
+
+==========================================
+FILE: src\LogSanitizer.GUI\ViewModels\MainViewModel.cs
+==========================================
+
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Runtime.CompilerServices;
+using System.Windows;
+using System.Windows.Input;
+using LogSanitizer.Core.Enums;
+using LogSanitizer.Core.Models;
+using LogSanitizer.Core.Services;
+using Microsoft.Win32;
+
+namespace LogSanitizer.GUI.ViewModels;
+
+// Wrapper class to handle Checkbox selection for each PiiType
+public class PiiTypeSelection : INotifyPropertyChanged
+{
+    public PiiType Type { get; set; }
+    public string Name => Type.ToString();
+    
+    private bool _isSelected;
+    public bool IsSelected
+    {
+        get => _isSelected;
+        set { _isSelected = value; OnPropertyChanged(); }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged([CallerMemberName] string? name = null) 
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+public class MainViewModel : INotifyPropertyChanged
+{
+    // Properties tied to the UI
+    private ObservableCollection<string> _sourceFiles = new();
+    private string _outputDirectory = string.Empty;
+    private double _progressValue;
+    private string _statusMessage = "Ready";
+    private bool _isBusy;
+
+    public ObservableCollection<string> SourceFiles
+    {
+        get => _sourceFiles;
+        set { _sourceFiles = value; OnPropertyChanged(); }
+    }
+
+    public string OutputDirectory
+    {
+        get => _outputDirectory;
+        set { _outputDirectory = value; OnPropertyChanged(); }
+    }
+
+    public double ProgressValue
+    {
+        get => _progressValue;
+        set { _progressValue = value; OnPropertyChanged(); }
+    }
+
+    public string StatusMessage
+    {
+        get => _statusMessage;
+        set { _statusMessage = value; OnPropertyChanged(); }
+    }
+
+    public bool IsBusy
+    {
+        get => _isBusy;
+        set { _isBusy = value; OnPropertyChanged(); CommandManager.InvalidateRequerySuggested(); }
+    }
+
+    // List of Checkboxes for UI
+    public ObservableCollection<PiiTypeSelection> PiiOptions { get; set; }
+
+    // Commands
+    public ICommand BrowseInputCommand { get; }
+    public ICommand BrowseOutputCommand { get; }
+    public ICommand SanitizeCommand { get; }
+    public ICommand ClearListCommand { get; }
+
+    public MainViewModel()
+    {
+        // Initialize Commands
+        BrowseInputCommand = new RelayCommand(_ => BrowseInput());
+        BrowseOutputCommand = new RelayCommand(_ => BrowseOutput());
+        ClearListCommand = new RelayCommand(_ => SourceFiles.Clear());
+        SanitizeCommand = new RelayCommand(async _ => await ExecuteSanitizationAsync(), _ => CanSanitize());
+
+        // Initialize PII Options (Defaulting generic ones to true)
+        PiiOptions = new ObservableCollection<PiiTypeSelection>(
+            Enum.GetValues<PiiType>().Select(t => new PiiTypeSelection 
+            { 
+                Type = t, 
+                IsSelected = (t == PiiType.IPv4Address || t == PiiType.Email || t == PiiType.CreditCard) 
+            })
+        );
+    }
+
+    private void BrowseInput()
+    {
+        var dialog = new OpenFileDialog 
+        { 
+            Filter = "Log Files (*.log;*.txt)|*.log;*.txt|All Files (*.*)|*.*",
+            Multiselect = true
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            foreach (var file in dialog.FileNames)
+            {
+                if (!SourceFiles.Contains(file))
+                {
+                    SourceFiles.Add(file);
+                }
+            }
+        }
+    }
+
+    private void BrowseOutput()
+    {
+        var dialog = new OpenFolderDialog();
+        if (dialog.ShowDialog() == true)
+        {
+            OutputDirectory = dialog.FolderName;
+        }
+    }
+
+    private bool CanSanitize()
+    {
+        // Button is enabled only if not busy, we have files, and at least one type is selected
+        return !IsBusy && 
+               SourceFiles.Any() && 
+               PiiOptions.Any(x => x.IsSelected);
+    }
+
+    private async Task ExecuteSanitizationAsync()
+    {
+        IsBusy = true;
+        StatusMessage = "Processing Batch...";
+        ProgressValue = 0;
+        
+        int totalFiles = SourceFiles.Count;
+        int processedCount = 0;
+        var failedFiles = new List<string>();
+
+        try
+        {
+            // Prepare Config
+            var selectedTypes = PiiOptions.Where(x => x.IsSelected).Select(x => x.Type).ToList();
+            var config = new SanitizationConfig
+            {
+                OverwriteOutput = true, 
+                TargetPiiTypes = selectedTypes,
+                MaskPlaceholder = "***"
+            };
+
+            var processor = new LogProcessor(config);
+
+            foreach (var inputFile in SourceFiles)
+            {
+                try 
+                {
+                    // Determine output path
+                    string outputDir = string.IsNullOrWhiteSpace(OutputDirectory) 
+                        ? Path.GetDirectoryName(inputFile)! 
+                        : OutputDirectory;
+
+                    string fileName = Path.GetFileNameWithoutExtension(inputFile) + "_sanitized" + Path.GetExtension(inputFile);
+                    string outputPath = Path.Combine(outputDir, fileName);
+
+                    // Process single file
+                    // We can't easily map byte progress to total batch progress without pre-scanning all file sizes.
+                    // So we'll just update progress per file completion for now, or maybe a "fake" progress per file.
+                    // Let's use a sub-progress approach if we really wanted smooth bars, but per-file is safer for batch.
+                    
+                    await processor.ProcessFileAsync(inputFile, outputPath, null);
+                }
+                catch (Exception ex)
+                {
+                    failedFiles.Add($"{Path.GetFileName(inputFile)}: {ex.Message}");
+                }
+                finally
+                {
+                    processedCount++;
+                    ProgressValue = (double)processedCount / totalFiles * 100;
+                    StatusMessage = $"Processed {processedCount}/{totalFiles}";
+                }
+            }
+
+            if (failedFiles.Any())
+            {
+                StatusMessage = "Completed with Errors.";
+                string errors = string.Join("\n", failedFiles.Take(10)); // Limit error msg size
+                if (failedFiles.Count > 10) errors += "\n...";
+                
+                MessageBox.Show($"Batch completed with {failedFiles.Count} errors:\n\n{errors}", "Warning", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+            else
+            {
+                StatusMessage = "Batch Completed Successfully!";
+                MessageBox.Show("All files processed successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = "Critical Error.";
+            MessageBox.Show($"Critical Error: {ex.Message}", "Failed", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    public event PropertyChangedEventHandler? PropertyChanged;
+    protected void OnPropertyChanged([CallerMemberName] string? name = null) 
+        => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+}
+
+==========================================
+FILE: src\LogSanitizer.GUI\ViewModels\RelayCommands.cs
+==========================================
+
+using System.Windows.Input;
+
+namespace LogSanitizer.GUI.ViewModels;
+
+public class RelayCommand : ICommand
+{
+    private readonly Action<object?> _execute;
+    private readonly Predicate<object?>? _canExecute;
+
+    public RelayCommand(Action<object?> execute, Predicate<object?>? canExecute = null)
+    {
+        _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+        _canExecute = canExecute;
+    }
+
+    public bool CanExecute(object? parameter)
+    {
+        return _canExecute == null || _canExecute(parameter);
+    }
+
+    public void Execute(object? parameter)
+    {
+        _execute(parameter);
+    }
+
+    public event EventHandler? CanExecuteChanged
+    {
+        add { CommandManager.RequerySuggested += value; }
+        remove { CommandManager.RequerySuggested -= value; }
+    }
+}

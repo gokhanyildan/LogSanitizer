@@ -1,0 +1,41 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{425711F3-8E8E-46C9-B1A4-D2FEF6D36E09}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogSanitizer.Core", "src\LogSanitizer.Core\LogSanitizer.Core.csproj", "{F424FFC8-15E6-4C9A-BB66-2A0305BD7D2D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogSanitizer.CLI", "src\LogSanitizer.CLI\LogSanitizer.CLI.csproj", "{ECFA5A12-AAB3-4839-981C-EC5CA3A91D6C}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LogSanitizer.GUI", "src\LogSanitizer.GUI\LogSanitizer.GUI.csproj", "{6A1C8F93-1B79-4DD3-91CB-618C984B6FFE}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F424FFC8-15E6-4C9A-BB66-2A0305BD7D2D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F424FFC8-15E6-4C9A-BB66-2A0305BD7D2D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F424FFC8-15E6-4C9A-BB66-2A0305BD7D2D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F424FFC8-15E6-4C9A-BB66-2A0305BD7D2D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ECFA5A12-AAB3-4839-981C-EC5CA3A91D6C}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ECFA5A12-AAB3-4839-981C-EC5CA3A91D6C}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ECFA5A12-AAB3-4839-981C-EC5CA3A91D6C}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ECFA5A12-AAB3-4839-981C-EC5CA3A91D6C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6A1C8F93-1B79-4DD3-91CB-618C984B6FFE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6A1C8F93-1B79-4DD3-91CB-618C984B6FFE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6A1C8F93-1B79-4DD3-91CB-618C984B6FFE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6A1C8F93-1B79-4DD3-91CB-618C984B6FFE}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{F424FFC8-15E6-4C9A-BB66-2A0305BD7D2D} = {425711F3-8E8E-46C9-B1A4-D2FEF6D36E09}
+		{ECFA5A12-AAB3-4839-981C-EC5CA3A91D6C} = {425711F3-8E8E-46C9-B1A4-D2FEF6D36E09}
+		{6A1C8F93-1B79-4DD3-91CB-618C984B6FFE} = {425711F3-8E8E-46C9-B1A4-D2FEF6D36E09}
+	EndGlobalSection
+EndGlobal
