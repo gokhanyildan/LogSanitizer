@@ -72,5 +72,5 @@ dotnet build
 
 # Create single-file executables (Publish)
 dotnet publish src/LogSanitizer.GUI/LogSanitizer.GUI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
-⚖️ License
+## ⚖️ License
 Distributed under the MIT License. See LICENSE for more information.
