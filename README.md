@@ -45,6 +45,7 @@ Ideal for batch scripts or automated workflows.
 
 # Custom target selection and overwrite mode
 .\LogSanitizer.CLI.exe --input "C:\logs\app.log" --overwrite --targets IPv4Address Email DomainUser CreditCard
+```
 
 Available Targets: IPv4Address, IPv6Address, Email, CreditCard, SocialSecurityNumber, PhoneNumber, IBAN, DomainUser.
 
@@ -56,9 +57,6 @@ Add Files: Click "Add Files" or drag & drop your log files into the source area.
 Select Rules: Check the PII types you want to anonymize on the right panel.
 
 Process: Click Start Batch. The tool will generate _sanitized files in the same directory (or your chosen output folder).
-
-🛠️ Build from Source
-Requirements: .NET 8.0 SDK
 
 # Clone the repository
 git clone [https://github.com/gokhanyildan/LogSanitizer.git](https://github.com/gokhanyildan/LogSanitizer.git)
@@ -74,3 +72,6 @@ dotnet publish src/LogSanitizer.GUI/LogSanitizer.GUI.csproj -c Release -r win-x6
 
 ⚖️ License
 Distributed under the MIT License. See LICENSE for more information.
+
+🛠️ Build from Source
+Requirements: .NET 8.0 SDK
