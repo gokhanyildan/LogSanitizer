@@ -1,49 +1,42 @@
-🛡️ LogSanitizer
-A log pseudonymization tool designed to assist with GDPR & KVKK data privacy requirements.
+# 🛡️ LogSanitizer
 
-LogSanitizer helps System Engineers, DevOps professionals, and Developers to sanitize sensitive information (PII) from log files while maintaining data traceability. Unlike simple redaction tools that replace data with ***, LogSanitizer replaces sensitive entities with consistent, unique tokens (e.g., [USR-A1B2C3]). This allows for secure log analysis and correlation without exposing raw user data, aligning with data minimization principles.
+![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg) ![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)
 
-🚀 Features
-Consistent Pseudonymization: Uses SHA256 (truncated) to hash data. The same User/IP always gets the same token within the session, preserving the context for debugging.
+**A log pseudonymization tool designed to assist with GDPR & KVKK data privacy requirements.**
 
-Real: gokhan.yildan@example.com -> Sanitized: [EML-7F3A91]
+LogSanitizer helps System Engineers, DevOps professionals, and Developers to sanitize sensitive information (PII) from log files while maintaining data traceability. Unlike simple redaction tools that replace data with `***`, LogSanitizer replaces sensitive entities with **consistent, unique tokens** (e.g., `[USR-A1B2C3]`). This allows for secure log analysis and correlation without exposing raw user data, aligning with data minimization principles.
 
-Dual Interface:
+![LogSanitizer Screenshot](docs/screenshot.png)
 
-GUI: Modern WPF interface for quick, drag-and-drop operations.
+## 🚀 Features
 
-CLI: Command-line tool for automation and CI/CD pipelines.
+* **Consistent Pseudonymization:** Uses SHA256 (truncated) to hash data. The same User/IP always gets the same token within the session, preserving the context for debugging.
+    * *Real:* `gokhan.yildan@example.com` -> *Sanitized:* `[EML-7F3A91]`
+* **Dual Interface:**
+    * **GUI:** Modern WPF interface for quick, drag-and-drop operations.
+    * **CLI:** Command-line tool for automation and CI/CD pipelines.
+* **Comprehensive PII Detection:**
+    * ✅ IPv4 & IPv6 Addresses
+    * ✅ Email Addresses
+    * ✅ Domain\User Accounts (e.g., `CORP\jdoe`, JSON compatible)
+    * ✅ Credit Card Numbers (Luhn check compliant)
+    * ✅ IBAN & SSN
+    * ✅ Phone Numbers
+* **Performance:** Optimized for large log files using stream processing.
 
-Comprehensive PII Detection:
+## 📥 Installation
 
-✅ IPv4 & IPv6 Addresses
+You don't need to build from source. Download the latest portable executable from the **[Releases Page](../../releases)**.
 
-✅ Email Addresses
+1.  Download `LogSanitizer.zip`.
+2.  Extract the files.
+3.  Run `LogSanitizer.GUI.exe`.
 
-✅ Domain\User Accounts (e.g., CORP\jdoe, JSON compatible)
+## 💻 Usage (CLI)
 
-✅ Credit Card Numbers (Luhn check compliant)
-
-✅ IBAN & SSN
-
-✅ Phone Numbers
-
-Performance: Optimized for large log files using stream processing.
-
-📥 Installation
-You don't need to build from source. Download the latest portable executable from the [şüpheli bağlantı kaldırıldı].
-
-Download LogSanitizer.zip.
-
-Extract the files.
-
-Run LogSanitizer.GUI.exe.
-
-💻 Usage (CLI)
 Ideal for batch scripts or automated workflows.
 
-PowerShell
-
+```powershell
 # Basic usage (Sanitizes using default rules)
 .\LogSanitizer.CLI.exe --input "C:\logs\server.log"
 
