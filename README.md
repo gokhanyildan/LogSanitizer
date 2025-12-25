@@ -45,6 +45,7 @@ Ideal for batch scripts or automated workflows.
 
 # Custom target selection and overwrite mode
 .\LogSanitizer.CLI.exe --input "C:\logs\app.log" --overwrite --targets IPv4Address Email DomainUser CreditCard
+
 Available Targets: IPv4Address, IPv6Address, Email, CreditCard, SocialSecurityNumber, PhoneNumber, IBAN, DomainUser.
 
 🖥️ Usage (GUI)
@@ -59,10 +60,8 @@ Process: Click Start Batch. The tool will generate _sanitized files in the same 
 🛠️ Build from Source
 Requirements: .NET 8.0 SDK
 
-PowerShell
-
 # Clone the repository
-git clone https://github.com/gokhanyildan/LogSanitizer.git
+git clone [https://github.com/gokhanyildan/LogSanitizer.git](https://github.com/gokhanyildan/LogSanitizer.git)
 
 # Navigate to the project
 cd LogSanitizer
@@ -72,5 +71,6 @@ dotnet build
 
 # Create single-file executables (Publish)
 dotnet publish src/LogSanitizer.GUI/LogSanitizer.GUI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
-## ⚖️ License
+
+⚖️ License
 Distributed under the MIT License. See LICENSE for more information.
