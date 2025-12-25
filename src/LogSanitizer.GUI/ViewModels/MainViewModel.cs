@@ -90,7 +90,7 @@ public class MainViewModel : INotifyPropertyChanged
             Enum.GetValues<PiiType>().Select(t => new PiiTypeSelection 
             { 
                 Type = t, 
-                IsSelected = (t == PiiType.IPv4Address || t == PiiType.Email || t == PiiType.CreditCard) 
+                IsSelected = (t == PiiType.IPv4Address || t == PiiType.Email || t == PiiType.CreditCard || t == PiiType.Username) 
             })
         );
     }

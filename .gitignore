@@ -4,6 +4,4 @@ obj/
 *.user
 *.log
 Release/
-Release/
-LogSanitizer_Build/
 LogSanitizer_Build/

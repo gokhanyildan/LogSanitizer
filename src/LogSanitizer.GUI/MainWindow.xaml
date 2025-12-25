@@ -80,8 +80,12 @@
             </Grid>
         </materialDesign:Card>
 
-        <StackPanel Grid.Row="0" Grid.Column="1" Margin="8,0,0,16">
-            <materialDesign:Card Padding="16" Margin="0,0,0,16">
+        <Grid Grid.Row="0" Grid.Column="1" Margin="8,0,0,16">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <materialDesign:Card Grid.Row="0" Padding="16" Margin="0,0,0,16">
                 <StackPanel>
                     <TextBlock Text="Output Destination" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" Margin="0,0,0,8"/>
                     <Grid>
@@ -97,10 +101,14 @@
                 </StackPanel>
             </materialDesign:Card>
 
-            <materialDesign:Card Padding="16" VerticalAlignment="Stretch">
-                <StackPanel>
+            <materialDesign:Card Grid.Row="1" Padding="16" VerticalAlignment="Stretch">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
                     <TextBlock Text="Sanitization Rules" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" Margin="0,0,0,8"/>
-                    <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="300">
+                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
                         <ItemsControl ItemsSource="{Binding PiiOptions}">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
@@ -111,9 +119,9 @@
                             </ItemsControl.ItemTemplate>
                         </ItemsControl>
                     </ScrollViewer>
-                </StackPanel>
+                </Grid>
             </materialDesign:Card>
-        </StackPanel>
+        </Grid>
 
         <materialDesign:Card Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Padding="16">
             <Grid>

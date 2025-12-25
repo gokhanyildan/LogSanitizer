@@ -33,6 +33,7 @@ public class LogProcessor
         if (_config.TargetPiiTypes.Contains(PiiType.FQDN)) map.Add(PiiType.FQDN, RegexDefinitions.FQDN);
         if (_config.TargetPiiTypes.Contains(PiiType.Hostname)) map.Add(PiiType.Hostname, RegexDefinitions.Hostname);
         if (_config.TargetPiiTypes.Contains(PiiType.DomainUser)) map.Add(PiiType.DomainUser, RegexDefinitions.DomainUser);
+        if (_config.TargetPiiTypes.Contains(PiiType.Username)) map.Add(PiiType.Username, RegexDefinitions.Username);
         
         return map;
     }
@@ -81,7 +82,7 @@ public class LogProcessor
         {
             if (_config.EnableHashing)
             {
-                currentLine = entry.Value.Replace(currentLine, match => GetConsistentHash(match.Value));
+                currentLine = entry.Value.Replace(currentLine, match => GetConsistentToken(entry.Key, match.Value));
             }
             else
             {
@@ -92,7 +93,7 @@ public class LogProcessor
         return currentLine;
     }
 
-    private string GetConsistentHash(string input)
+    private string GetConsistentToken(PiiType type, string input)
     {
         if (_hashCache.TryGetValue(input, out var cachedHash))
         {
@@ -104,16 +105,31 @@ public class LogProcessor
             var bytes = Encoding.UTF8.GetBytes(input);
             var hashBytes = sha256.ComputeHash(bytes);
             
-            // Take first 8 bytes and convert to hex (16 characters)
             var sb = new StringBuilder();
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 3; i++)
             {
                 sb.Append(hashBytes[i].ToString("X2"));
             }
-            
-            var hash = $"ID-{sb}";
-            _hashCache[input] = hash;
-            return hash;
+            var code = GetTypeCode(type);
+            var token = $"[{code}-{sb}]";
+            _hashCache[input] = token;
+            return token;
         }
     }
+
+    private static string GetTypeCode(PiiType type) => type switch
+    {
+        PiiType.IPv4Address => "IP4",
+        PiiType.IPv6Address => "IP6",
+        PiiType.Email => "EML",
+        PiiType.CreditCard => "CC",
+        PiiType.SocialSecurityNumber => "SSN",
+        PiiType.PhoneNumber => "PHN",
+        PiiType.IBAN => "IBAN",
+        PiiType.Hostname => "HOST",
+        PiiType.FQDN => "FQDN",
+        PiiType.DomainUser => "USR",
+        PiiType.Username => "USR",
+        _ => "ID"
+    };
 }

@@ -21,12 +21,12 @@ public static class RegexDefinitions
         
     // Phone Number: Generic global phone match
     public static readonly Regex PhoneNumber = new Regex(
-        @"\b\+?(\d[\d-. ]+)?(\([\d-. ]+\))?[\d-. ]+\d\b",
+        @"(?<!\d)(?:\+?\d{1,3}[- .]?)?\(?\d{3}\)?[- .]?\d{3}[- .]?\d{4}(?!\d)",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
     // FQDN: Matches domain-like structures (e.g., server.internal.corp)
     public static readonly Regex FQDN = new Regex(
-        @"\b(?!\d+\.\d+\.\d+\.\d+)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,63}\b",
+        @"\b(?!\d+\.\d+\.\d+\.\d+)(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+(?!(?:zip|exe|dll|log|txt|png|core)\b)[a-zA-Z]{2,63}\b",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
 
     // Hostname: Matches words containing specific infrastructure keywords.
@@ -54,6 +54,11 @@ public static class RegexDefinitions
 
     // DomainUser: Matches DOMAIN\User format
     public static readonly Regex DomainUser = new Regex(
-        @"\b[a-zA-Z0-9][a-zA-Z0-9-]{0,14}\\[a-zA-Z0-9._-]+\b",
+        @"\b[a-zA-Z0-9-]{2,15}\\{1,2}[a-zA-Z0-9._-]{2,30}\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+    // Username: Windows-style DOMAIN\User with stricter boundaries
+    public static readonly Regex Username = new Regex(
+        @"(?<=\s|^|\""|'|\\)[a-zA-Z0-9-]{2,15}\\[a-zA-Z0-9._-]{2,30}(?=\s|$|\""|'|\\|\])",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 }

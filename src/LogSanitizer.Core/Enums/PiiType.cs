@@ -11,5 +11,6 @@ public enum PiiType
     IBAN,
     Hostname, // NetBIOS Name (e.g., SERVER01)
     FQDN,      // Fully Qualified Domain Name (e.g., server01.corp.local)
-    DomainUser // Domain\User format
+    DomainUser, // Domain\User format
+    Username
 }
