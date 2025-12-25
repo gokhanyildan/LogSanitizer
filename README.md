@@ -1,46 +1,83 @@
-# LogSanitizer
+🛡️ LogSanitizer
+A log pseudonymization tool designed to assist with GDPR & KVKK data privacy requirements.
 
-## Description
-A GDPR-compliant log anonymization tool with Consistent Hashing. This tool allows you to sanitize sensitive information from log files while maintaining traceability through consistent hashing of specific data types.
+LogSanitizer helps System Engineers, DevOps professionals, and Developers to sanitize sensitive information (PII) from log files while maintaining data traceability. Unlike simple redaction tools that replace data with ***, LogSanitizer replaces sensitive entities with consistent, unique tokens (e.g., [USR-A1B2C3]). This allows for secure log analysis and correlation without exposing raw user data, aligning with data minimization principles.
 
-## Features
-- **Supported PII Types**: 
-  - IPv4 & IPv6 Addresses
-  - Email Addresses
-  - Credit Card Numbers
-  - Social Security Numbers (SSN)
-  - International Bank Account Numbers (IBAN)
-  - Domain\User Accounts
-  - Phone Numbers
-  - Hostnames & FQDNs
-- **Consistent Hashing**: Enables traceability for Users and IPs without revealing identity (SHA256 truncated).
-- **Dual Interface**: Available as both a Command Line Interface (CLI) and a Graphical User Interface (GUI).
+🚀 Features
+Consistent Pseudonymization: Uses SHA256 (truncated) to hash data. The same User/IP always gets the same token within the session, preserving the context for debugging.
 
-## Usage (CLI)
+Real: gokhan.yildan@example.com -> Sanitized: [EML-7F3A91]
 
-Run the tool from the command line using the following arguments:
+Dual Interface:
 
-```powershell
-# Basic usage (defaults to IPv4, Email, CreditCard)
-LogSanitizer.CLI.exe --input "C:\logs\app.log" --output "C:\logs\app_clean.log"
+GUI: Modern WPF interface for quick, drag-and-drop operations.
 
-# Specify targets and overwrite existing file
-LogSanitizer.CLI.exe --input "C:\logs\app.log" --output "C:\logs\app_clean.log" --overwrite --targets IPv4Address IPv6Address Email DomainUser
-```
+CLI: Command-line tool for automation and CI/CD pipelines.
 
-## Usage (GUI)
+Comprehensive PII Detection:
 
-The WPF-based GUI provides a user-friendly way to sanitize logs:
-1. **Input/Output**: Browse to select your source log file and destination path.
-2. **Options**: Check the boxes for the PII types you wish to sanitize (e.g., Email, DomainUser).
-3. **Start**: Click "Start Sanitization" to process the file. A progress bar will show the status.
+✅ IPv4 & IPv6 Addresses
 
-## Build Instructions
+✅ Email Addresses
 
-To build the project from source, ensure you have the .NET 8 SDK installed and run:
+✅ Domain\User Accounts (e.g., CORP\jdoe, JSON compatible)
 
-```powershell
+✅ Credit Card Numbers (Luhn check compliant)
+
+✅ IBAN & SSN
+
+✅ Phone Numbers
+
+Performance: Optimized for large log files using stream processing.
+
+📥 Installation
+You don't need to build from source. Download the latest portable executable from the [şüpheli bağlantı kaldırıldı].
+
+Download LogSanitizer.zip.
+
+Extract the files.
+
+Run LogSanitizer.GUI.exe.
+
+💻 Usage (CLI)
+Ideal for batch scripts or automated workflows.
+
+PowerShell
+
+# Basic usage (Sanitizes using default rules)
+.\LogSanitizer.CLI.exe --input "C:\logs\server.log"
+
+# Specify output file
+.\LogSanitizer.CLI.exe --input "C:\logs\server.log" --output "C:\logs\server_clean.log"
+
+# Custom target selection and overwrite mode
+.\LogSanitizer.CLI.exe --input "C:\logs\app.log" --overwrite --targets IPv4Address Email DomainUser CreditCard
+Available Targets: IPv4Address, IPv6Address, Email, CreditCard, SocialSecurityNumber, PhoneNumber, IBAN, DomainUser.
+
+🖥️ Usage (GUI)
+Launch LogSanitizer.GUI.exe.
+
+Add Files: Click "Add Files" or drag & drop your log files into the source area.
+
+Select Rules: Check the PII types you want to anonymize on the right panel.
+
+Process: Click Start Batch. The tool will generate _sanitized files in the same directory (or your chosen output folder).
+
+🛠️ Build from Source
+Requirements: .NET 8.0 SDK
+
+PowerShell
+
+# Clone the repository
+git clone https://github.com/gokhanyildan/LogSanitizer.git
+
+# Navigate to the project
+cd LogSanitizer
+
+# Build the solution
 dotnet build
-```
 
-To create a release build (single-file executable), run the provided `publish.ps1` script.
+# Create single-file executables (Publish)
+dotnet publish src/LogSanitizer.GUI/LogSanitizer.GUI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+⚖️ License
+Distributed under the MIT License. See LICENSE for more information.
