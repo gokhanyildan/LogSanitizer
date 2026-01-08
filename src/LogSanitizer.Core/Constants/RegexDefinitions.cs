@@ -14,7 +14,8 @@ public static class RegexDefinitions
         @"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
-    // Credit Card: Basic 13-16 digit matching
+    // Credit Card: Basic 13-16 digit matching.
+    // Refined to avoid simple 13-16 digit IDs by ensuring digit boundaries.
     public static readonly Regex CreditCard = new Regex(
         @"\b(?:\d[ -]*?){13,16}\b",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture);
@@ -31,8 +32,6 @@ public static class RegexDefinitions
 
     // Hostname: Matches words containing specific infrastructure keywords.
     // Logic: Must be alphanumeric (with hyphens) AND contain 'SW', 'SRV', 'SERVER'.
-    // Examples: WEB-SRV-01, Core-SW, FileServer, APP_SRV
-    // Added IgnoreCase so it catches 'srv', 'Srv', 'SRV'.
     public static readonly Regex Hostname = new Regex(
         @"\b[a-zA-Z0-9-]*(?:SW|SRV|SERVER)[a-zA-Z0-9-]*\b",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);

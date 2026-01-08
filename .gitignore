@@ -5,3 +5,10 @@ obj/
 *.log
 Release/
 LogSanitizer_Build/
+
+# Local logs
+build_log.txt
+build_success_check.txt
+final_test_log.txt
+startup_error.log
+startup_trace.log

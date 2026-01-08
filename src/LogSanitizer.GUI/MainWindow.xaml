@@ -66,8 +66,14 @@
                 <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
                     <Button Command="{Binding BrowseInputCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0">
                         <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="Plus" Margin="0,0,8,0"/>
+                            <materialDesign:PackIcon Kind="FilePlus" Margin="0,0,8,0"/>
                             <TextBlock Text="Add Files"/>
+                        </StackPanel>
+                    </Button>
+                    <Button Command="{Binding BrowseInputFolderCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="FolderPlus" Margin="0,0,8,0"/>
+                            <TextBlock Text="Add Folder"/>
                         </StackPanel>
                     </Button>
                     <Button Command="{Binding ClearListCommand}" Style="{StaticResource MaterialDesignFlatButton}">

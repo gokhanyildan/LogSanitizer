@@ -16,6 +16,16 @@ public class SanitizationConfig
     // If true, uses consistent hashing for traceability instead of simple masking
     public bool EnableHashing { get; set; } = true;
 
+    // Salt to add meaningful randomness to the hashing process (Security Hardening)
+    // If null/empty, hashing will be deterministic but unsalted (less secure against rainbow tables)
+    public string Salt { get; set; } = "";
+
+    // List of file extensions to process in batch mode (e.g., ".log", ".txt")
+    public List<string> AllowedExtensions { get; set; } = new List<string> { ".log", ".txt" };
+
+    // If true, attempts to parse each line as JSON and sanitize values while preserving structure
+    public bool DetectJson { get; set; } = true;
+
     // Factory method for default safe configuration
     public static SanitizationConfig Default => new SanitizationConfig
     {
@@ -23,6 +33,8 @@ public class SanitizationConfig
         { 
             PiiType.IPv4Address, 
             PiiType.Email 
-        }
+        },
+        Salt = Guid.NewGuid().ToString(), // Default to a random salt for security
+        AllowedExtensions = new List<string> { ".log", ".txt" }
     };
 }

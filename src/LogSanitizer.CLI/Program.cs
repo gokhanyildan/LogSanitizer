@@ -11,16 +11,16 @@ class Program
     {
         // 1. Define CLI Options
         
-        // Input file path
-        var inputOption = new Option<FileInfo>(
+        // Input path (file or directory)
+        var inputOption = new Option<string>(
             name: "--input",
-            description: "The path to the source log file.")
+            description: "The path to the source log file or directory.")
             { IsRequired = true };
 
-        // Output file path
-        var outputOption = new Option<FileInfo>(
+        // Output path (file or directory)
+        var outputOption = new Option<string>(
             name: "--output",
-            description: "The path where the sanitized file will be saved.")
+            description: "The path where the sanitized content will be saved.")
             { IsRequired = true };
 
         // Overwrite permission
@@ -53,21 +53,22 @@ class Program
         return await rootCommand.InvokeAsync(args);
     }
 
-    private static async Task RunSanitizationAsync(FileInfo input, FileInfo output, bool overwrite, List<PiiType> targets)
+    private static async Task RunSanitizationAsync(string input, string output, bool overwrite, List<PiiType> targets)
     {
         Console.WriteLine($"Starting sanitization...");
-        Console.WriteLine($"Source: {input.FullName}");
-        Console.WriteLine($"Target: {output.FullName}");
+        Console.WriteLine($"Source: {input}");
+        Console.WriteLine($"Target: {output}");
         
         // Configuration setup
         var config = new SanitizationConfig
         {
             OverwriteOutput = overwrite,
             TargetPiiTypes = targets,
-            MaskPlaceholder = "***" // Default mask
+            MaskPlaceholder = "***", // Default mask
+            Salt = Guid.NewGuid().ToString() // Generate a random salt for this run
         };
 
-        var processor = new LogProcessor(config);
+        using var processor = new LogProcessor(config);
 
         try
         {
@@ -80,12 +81,26 @@ class Program
 
             var stopwatch = System.Diagnostics.Stopwatch.StartNew();
             
-            // Start the actual processing
-            await processor.ProcessFileAsync(input.FullName, output.FullName, progress);
+            // Determine if input is file or directory
+            if (File.Exists(input))
+            {
+                 // Processing single file
+                 await processor.ProcessFileAsync(input, output, progress);
+            }
+            else if (Directory.Exists(input))
+            {
+                Console.WriteLine("Mode: Batch Directory Processing");
+                // Processing directory
+                await processor.ProcessDirectoryAsync(input, output, progress);
+            }
+            else
+            {
+                throw new FileNotFoundException($"Input path not found: {input}");
+            }
             
             stopwatch.Stop();
             Console.WriteLine($"\n\nDone! Processed in {stopwatch.Elapsed.TotalSeconds:F2} seconds.");
-            Console.WriteLine($"Check output at: {output.FullName}");
+            Console.WriteLine($"Check output at: {output}");
         }
         catch (Exception ex)
         {

@@ -1,6 +1,6 @@
 # 🛡️ LogSanitizer
 
-![License](https://img.shields.io/badge/license-MIT-blue.svg) ![Platform](https://img.shields.io/badge/platform-Windows-lightgrey.svg) ![.NET](https://img.shields.io/badge/.NET-8.0-purple.svg)
+! `https://img.shields.io/badge/license-MIT-blue.svg`  ! `https://img.shields.io/badge/platform-Windows-lightgrey.svg`  ! `https://img.shields.io/badge/.NET-8.0-purple.svg`
 
 **A log pseudonymization tool designed to assist with GDPR & KVKK data privacy requirements.**
 
@@ -44,34 +44,34 @@ Ideal for batch scripts or automated workflows.
 .\LogSanitizer.CLI.exe --input "C:\logs\server.log" --output "C:\logs\server_clean.log"
 
 # Custom target selection and overwrite mode
-.\LogSanitizer.CLI.exe --input "C:\logs\app.log" --overwrite --targets IPv4Address Email DomainUser CreditCard
-```
+.\LogSanitizer.CLI.exe --input "C:\logs\app.log" --overwrite --targets IPv4Address Email DomainUser CreditCard 
 
-Available Targets: IPv4Address, IPv6Address, Email, CreditCard, SocialSecurityNumber, PhoneNumber, IBAN, DomainUser.
+Available Targets: IPv4Address, IPv6Address, Email, CreditCard, SocialSecurityNumber, PhoneNumber, IBAN, DomainUser. 
 
-🖥️ Usage (GUI)
-Launch LogSanitizer.GUI.exe.
+🖥️ Usage (GUI) 
+Launch LogSanitizer.GUI.exe. 
 
-Add Files: Click "Add Files" or drag & drop your log files into the source area.
+Add Files: Click "Add Files" or drag & drop your log files into the source area. 
 
-Select Rules: Check the PII types you want to anonymize on the right panel.
+Select Rules: Check the PII types you want to anonymize on the right panel. 
 
-Process: Click Start Batch. The tool will generate _sanitized files in the same directory (or your chosen output folder).
+Process: Click Start Batch. The tool will generate _sanitized files in the same directory (or your chosen output folder). 
 
-# Clone the repository
-git clone [https://github.com/gokhanyildan/LogSanitizer.git](https://github.com/gokhanyildan/LogSanitizer.git)
+🛠️ Build from Source 
+Requirements: .NET 8.0 SDK 
 
-# Navigate to the project
-cd LogSanitizer
+PowerShell 
 
-# Build the solution
-dotnet build
+# Clone the repository 
+git clone `https://github.com/gokhanyildan/LogSanitizer.git` 
 
-# Create single-file executables (Publish)
-dotnet publish src/LogSanitizer.GUI/LogSanitizer.GUI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true
+# Navigate to the project 
+cd LogSanitizer 
 
-⚖️ License
+# Build the solution 
+dotnet build 
+
+# Create single-file executables (Publish) 
+dotnet publish src/LogSanitizer.GUI/LogSanitizer.GUI.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=true 
+⚖️ License 
 Distributed under the MIT License. See LICENSE for more information.
-
-🛠️ Build from Source
-Requirements: .NET 8.0 SDK

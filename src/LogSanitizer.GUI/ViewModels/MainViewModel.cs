@@ -73,6 +73,7 @@ public class MainViewModel : INotifyPropertyChanged
 
     // Commands
     public ICommand BrowseInputCommand { get; }
+    public ICommand BrowseInputFolderCommand { get; }
     public ICommand BrowseOutputCommand { get; }
     public ICommand SanitizeCommand { get; }
     public ICommand ClearListCommand { get; }
@@ -81,6 +82,7 @@ public class MainViewModel : INotifyPropertyChanged
     {
         // Initialize Commands
         BrowseInputCommand = new RelayCommand(_ => BrowseInput());
+        BrowseInputFolderCommand = new RelayCommand(_ => BrowseInputFolder());
         BrowseOutputCommand = new RelayCommand(_ => BrowseOutput());
         ClearListCommand = new RelayCommand(_ => SourceFiles.Clear());
         SanitizeCommand = new RelayCommand(async _ => await ExecuteSanitizationAsync(), _ => CanSanitize());
@@ -115,6 +117,27 @@ public class MainViewModel : INotifyPropertyChanged
         }
     }
 
+    private void BrowseInputFolder()
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "Select Folder to Sanitize",
+            Multiselect = true
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            // OpenFolderDialog returns folder names
+            foreach (var folder in dialog.FolderNames)
+            {
+                if (!SourceFiles.Contains(folder))
+                {
+                    SourceFiles.Add(folder);
+                }
+            }
+        }
+    }
+
     private void BrowseOutput()
     {
         var dialog = new OpenFolderDialog();
@@ -138,7 +161,7 @@ public class MainViewModel : INotifyPropertyChanged
         StatusMessage = "Processing Batch...";
         ProgressValue = 0;
         
-        int totalFiles = SourceFiles.Count;
+        int totalItems = SourceFiles.Count;
         int processedCount = 0;
         var failedFiles = new List<string>();
 
@@ -150,39 +173,47 @@ public class MainViewModel : INotifyPropertyChanged
             {
                 OverwriteOutput = true, 
                 TargetPiiTypes = selectedTypes,
-                MaskPlaceholder = "***"
+                MaskPlaceholder = "***",
+                Salt = Guid.NewGuid().ToString() // Unique salt per batch run
             };
 
-            var processor = new LogProcessor(config);
+            using var processor = new LogProcessor(config);
 
-            foreach (var inputFile in SourceFiles)
+            foreach (var inputPath in SourceFiles)
             {
                 try 
                 {
-                    // Determine output path
-                    string outputDir = string.IsNullOrWhiteSpace(OutputDirectory) 
-                        ? Path.GetDirectoryName(inputFile)! 
-                        : OutputDirectory;
+                    if (Directory.Exists(inputPath))
+                    {
+                        // Folder Processing
+                        string outputDir = string.IsNullOrWhiteSpace(OutputDirectory) 
+                            ? inputPath + "_sanitized"
+                            : OutputDirectory;
 
-                    string fileName = Path.GetFileNameWithoutExtension(inputFile) + "_sanitized" + Path.GetExtension(inputFile);
-                    string outputPath = Path.Combine(outputDir, fileName);
+                        await processor.ProcessDirectoryAsync(inputPath, outputDir, null);
+                    }
+                    else if (File.Exists(inputPath))
+                    {
+                        // File Processing
+                        string outputDir = string.IsNullOrWhiteSpace(OutputDirectory) 
+                            ? Path.GetDirectoryName(inputPath)! 
+                            : OutputDirectory;
 
-                    // Process single file
-                    // We can't easily map byte progress to total batch progress without pre-scanning all file sizes.
-                    // So we'll just update progress per file completion for now, or maybe a "fake" progress per file.
-                    // Let's use a sub-progress approach if we really wanted smooth bars, but per-file is safer for batch.
-                    
-                    await processor.ProcessFileAsync(inputFile, outputPath, null);
+                        string fileName = Path.GetFileNameWithoutExtension(inputPath) + "_sanitized" + Path.GetExtension(inputPath);
+                        string outputPath = Path.Combine(outputDir, fileName);
+
+                        await processor.ProcessFileAsync(inputPath, outputPath, null);
+                    }
                 }
                 catch (Exception ex)
                 {
-                    failedFiles.Add($"{Path.GetFileName(inputFile)}: {ex.Message}");
+                    failedFiles.Add($"{Path.GetFileName(inputPath)}: {ex.Message}");
                 }
                 finally
                 {
                     processedCount++;
-                    ProgressValue = (double)processedCount / totalFiles * 100;
-                    StatusMessage = $"Processed {processedCount}/{totalFiles}";
+                    ProgressValue = (double)processedCount / totalItems * 100;
+                    StatusMessage = $"Processed {processedCount}/{totalItems}";
                 }
             }
 
@@ -197,7 +228,7 @@ public class MainViewModel : INotifyPropertyChanged
             else
             {
                 StatusMessage = "Batch Completed Successfully!";
-                MessageBox.Show("All files processed successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
+                MessageBox.Show("All items processed successfully.", "Success", MessageBoxButton.OK, MessageBoxImage.Information);
             }
         }
         catch (Exception ex)
