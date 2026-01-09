@@ -37,6 +37,9 @@ public class LogProcessor : IDisposable
         if (_config.TargetPiiTypes.Contains(PiiType.Hostname)) map.Add(PiiType.Hostname, RegexDefinitions.Hostname);
         if (_config.TargetPiiTypes.Contains(PiiType.DomainUser)) map.Add(PiiType.DomainUser, RegexDefinitions.DomainUser);
         if (_config.TargetPiiTypes.Contains(PiiType.Username)) map.Add(PiiType.Username, RegexDefinitions.Username);
+        if (_config.TargetPiiTypes.Contains(PiiType.CertificateThumbprint)) map.Add(PiiType.CertificateThumbprint, RegexDefinitions.CertificateThumbprint);
+        if (_config.TargetPiiTypes.Contains(PiiType.BearerToken)) map.Add(PiiType.BearerToken, RegexDefinitions.BearerToken);
+        if (_config.TargetPiiTypes.Contains(PiiType.ConnectionStringPassword)) map.Add(PiiType.ConnectionStringPassword, RegexDefinitions.ConnectionStringPassword);
         
         return map;
     }
@@ -48,33 +51,60 @@ public class LogProcessor : IDisposable
 
         string fullInputPath = Path.GetFullPath(inputPath);
         string fullOutputPath = Path.GetFullPath(outputPath);
-
-        if (string.Equals(fullInputPath, fullOutputPath, StringComparison.OrdinalIgnoreCase))
-            throw new IOException("Input and output paths cannot be the same file. Please specify a different output path.");
+        
+        // If paths are same and overwrite is disabled, error out.
+        if (string.Equals(fullInputPath, fullOutputPath, StringComparison.OrdinalIgnoreCase) && !_config.OverwriteOutput)
+            throw new IOException("Input and output paths are the same. Please enable overwrite mode or specify a different output path.");
 
         if (File.Exists(outputPath) && !_config.OverwriteOutput)
             throw new IOException($"Output file already exists: {outputPath}");
 
+        // If overwrite enabled and paths match, use temp file
+        string targetPath = fullOutputPath;
+        string? tempPath = null;
+        if (_config.OverwriteOutput && string.Equals(fullInputPath, fullOutputPath, StringComparison.OrdinalIgnoreCase))
+        {
+            tempPath = Path.Combine(Path.GetDirectoryName(fullOutputPath)!, $"temp_{Guid.NewGuid()}{Path.GetExtension(fullOutputPath)}");
+            targetPath = tempPath;
+        }
+
         long totalBytes = new FileInfo(inputPath).Length;
         long processedBytes = 0;
 
-        using (var reader = new StreamReader(inputPath))
-        using (var writer = new StreamWriter(outputPath))
+        try 
         {
-            string? line;
-            while ((line = await reader.ReadLineAsync()) != null)
+            using (var reader = new StreamReader(inputPath))
+            using (var writer = new StreamWriter(targetPath))
             {
-                string sanitizedLine = SanitizeLine(line);
-                await writer.WriteLineAsync(sanitizedLine);
-
-                if (progress != null)
+                string? line;
+                while ((line = await reader.ReadLineAsync()) != null)
                 {
-                    processedBytes += line.Length + Environment.NewLine.Length;
-                    // Clamp percentage to 100 max
-                    double percent = Math.Min(100.0, (double)processedBytes / totalBytes * 100);
-                    progress.Report(percent);
+                    string sanitizedLine = SanitizeLine(line);
+                    await writer.WriteLineAsync(sanitizedLine);
+
+                    if (progress != null)
+                    {
+                        processedBytes += line.Length + Environment.NewLine.Length;
+                        double percent = Math.Min(100.0, (double)processedBytes / totalBytes * 100);
+                        progress.Report(percent);
+                    }
                 }
             }
+
+            // If we used a temp file, replace original now
+            if (tempPath != null)
+            {
+                File.Move(tempPath, fullOutputPath, overwrite: true);
+            }
+        }
+        catch
+        {
+            // Cleanup temp file on failure
+            if (tempPath != null && File.Exists(tempPath))
+            {
+                File.Delete(tempPath);
+            }
+            throw;
         }
     }
 
@@ -270,6 +300,9 @@ public class LogProcessor : IDisposable
         PiiType.FQDN => "FQDN",
         PiiType.DomainUser => "USR",
         PiiType.Username => "USR",
+        PiiType.CertificateThumbprint => "THUMB",
+        PiiType.BearerToken => "TKN",
+        PiiType.ConnectionStringPassword => "SEC",
         _ => "ID"
     };
 

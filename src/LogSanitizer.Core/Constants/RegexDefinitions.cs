@@ -4,9 +4,9 @@ namespace LogSanitizer.Core.Constants;
 
 public static class RegexDefinitions
 {
-    // IPv4: Matches standard IP addresses (e.g., 192.168.1.1)
+    // IPv4: Matches standard IP addresses (e.g., 192.168.1.1) with 0-255 validation and boundary checks
     public static readonly Regex IPv4 = new Regex(
-        @"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b",
+        @"(?<!\.)\b(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b(?!\.)",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
     // Email: Standard email pattern
@@ -60,4 +60,19 @@ public static class RegexDefinitions
     public static readonly Regex Username = new Regex(
         @"(?<=\s|^|\""|'|\\)[a-zA-Z0-9-]{2,15}\\[a-zA-Z0-9._-]{2,30}(?=\s|$|\""|'|\\|\])",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+    // Certificate Thumbprint: SHA-1 Hex String (40 chars)
+    public static readonly Regex CertificateThumbprint = new Regex(
+        @"\b[0-9a-fA-F]{40}\b",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+    // Bearer Token: Matches "Bearer <token>"
+    public static readonly Regex BearerToken = new Regex(
+        @"Bearer\s+[a-zA-Z0-9\-\._~\+\/]+",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
+
+    // Connection String Password: Matches Password=..., Pwd=..., User ID=...
+    public static readonly Regex ConnectionStringPassword = new Regex(
+        @"(?<=(Password|Pwd|User ID|Uid)=)[^;]*",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
 }

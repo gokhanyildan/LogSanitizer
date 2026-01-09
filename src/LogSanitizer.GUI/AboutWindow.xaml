@@ -1,0 +1,47 @@
+<Window x:Class="LogSanitizer.GUI.AboutWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:LogSanitizer.GUI"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        mc:Ignorable="d"
+        Title="About LogSanitizer" Height="350" Width="400"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        SizeToContent="Height"
+        MinHeight="350"
+        Background="{DynamicResource MaterialDesignPaper}"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        FontFamily="{DynamicResource MaterialDesignFont}">
+    
+    <Grid Margin="16">
+        <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
+            <materialDesign:PackIcon Kind="SecurityNetwork" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
+            
+            <TextBlock Text="{Binding Product}" Style="{StaticResource MaterialDesignHeadline4TextBlock}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
+            <TextBlock Text="{Binding Version, StringFormat='Version {0}'}" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" HorizontalAlignment="Center" Margin="0,0,0,16" Opacity="0.7" TextWrapping="Wrap" TextAlignment="Center"/>
+            
+            <TextBlock Text="{Binding Description}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,16" MaxWidth="300"/>
+            
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,4">
+                <TextBlock Text="Created by: " FontWeight="Bold"/>
+                <TextBlock Text="{Binding Author}"/>
+            </StackPanel>
+            
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" Margin="0,0,0,4">
+                <TextBlock Text="Website: " FontWeight="Bold" Margin="0,0,4,0"/>
+                <TextBlock>
+                    <Hyperlink NavigateUri="https://www.gokhanyildan.com" RequestNavigate="Hyperlink_RequestNavigate">
+                        https://www.gokhanyildan.com
+                    </Hyperlink>
+                </TextBlock>
+            </StackPanel>
+            
+            <TextBlock Text="{Binding Copyright}" HorizontalAlignment="Center" Margin="0,8,0,4" Opacity="0.7" FontSize="11"/>
+            <TextBlock Text="Licensed under the MIT License" HorizontalAlignment="Center" Margin="0,0,0,16" Opacity="0.5" FontSize="10"/>
+            
+            <Button Content="OK" IsCancel="True" Click="OkButton_Click" HorizontalAlignment="Center" Width="100" Margin="0,0,0,20"/>
+        </StackPanel>
+    </Grid>
+</Window>

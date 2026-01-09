@@ -37,6 +37,8 @@ public class MainViewModel : INotifyPropertyChanged
     private double _progressValue;
     private string _statusMessage = "Ready";
     private bool _isBusy;
+    private bool _overwriteOutput;
+    private bool _isAllRulesSelected;
 
     public ObservableCollection<string> SourceFiles
     {
@@ -48,6 +50,31 @@ public class MainViewModel : INotifyPropertyChanged
     {
         get => _outputDirectory;
         set { _outputDirectory = value; OnPropertyChanged(); }
+    }
+
+    public bool OverwriteOutput
+    {
+        get => _overwriteOutput;
+        set { _overwriteOutput = value; OnPropertyChanged(); }
+    }
+
+    public bool IsAllRulesSelected
+    {
+        get => _isAllRulesSelected;
+        set 
+        { 
+            if (_isAllRulesSelected != value)
+            {
+                _isAllRulesSelected = value; 
+                OnPropertyChanged();
+                
+                // Update all items
+                foreach (var option in PiiOptions)
+                {
+                    option.IsSelected = value;
+                }
+            }
+        }
     }
 
     public double ProgressValue
@@ -97,6 +124,45 @@ public class MainViewModel : INotifyPropertyChanged
         );
     }
 
+    public void AddSourceFiles(IEnumerable<string> paths)
+    {
+        var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) 
+        { 
+            ".log", ".txt", ".csv", ".json", ".xml", ".out", ".trace" 
+        };
+
+        foreach (var path in paths)
+        {
+            if (Directory.Exists(path))
+            {
+                try
+                {
+                    var files = Directory.GetFiles(path, "*.*", SearchOption.AllDirectories)
+                                         .Where(f => allowedExtensions.Contains(Path.GetExtension(f)));
+
+                    foreach (var file in files)
+                    {
+                        if (!SourceFiles.Contains(file))
+                        {
+                            SourceFiles.Add(file);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Error scanning folder '{path}': {ex.Message}", "Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+            else if (File.Exists(path))
+            {
+                if (!SourceFiles.Contains(path))
+                {
+                    SourceFiles.Add(path);
+                }
+            }
+        }
+    }
+
     private void BrowseInput()
     {
         var dialog = new OpenFileDialog 
@@ -107,13 +173,7 @@ public class MainViewModel : INotifyPropertyChanged
 
         if (dialog.ShowDialog() == true)
         {
-            foreach (var file in dialog.FileNames)
-            {
-                if (!SourceFiles.Contains(file))
-                {
-                    SourceFiles.Add(file);
-                }
-            }
+            AddSourceFiles(dialog.FileNames);
         }
     }
 
@@ -127,14 +187,7 @@ public class MainViewModel : INotifyPropertyChanged
 
         if (dialog.ShowDialog() == true)
         {
-            // OpenFolderDialog returns folder names
-            foreach (var folder in dialog.FolderNames)
-            {
-                if (!SourceFiles.Contains(folder))
-                {
-                    SourceFiles.Add(folder);
-                }
-            }
+            AddSourceFiles(dialog.FolderNames);
         }
     }
 
@@ -171,7 +224,7 @@ public class MainViewModel : INotifyPropertyChanged
             var selectedTypes = PiiOptions.Where(x => x.IsSelected).Select(x => x.Type).ToList();
             var config = new SanitizationConfig
             {
-                OverwriteOutput = true, 
+                OverwriteOutput = OverwriteOutput, 
                 TargetPiiTypes = selectedTypes,
                 MaskPlaceholder = "***",
                 Salt = Guid.NewGuid().ToString() // Unique salt per batch run
@@ -199,7 +252,16 @@ public class MainViewModel : INotifyPropertyChanged
                             ? Path.GetDirectoryName(inputPath)! 
                             : OutputDirectory;
 
-                        string fileName = Path.GetFileNameWithoutExtension(inputPath) + "_sanitized" + Path.GetExtension(inputPath);
+                        string fileName;
+                        if (OverwriteOutput)
+                        {
+                            fileName = Path.GetFileName(inputPath);
+                        }
+                        else
+                        {
+                            fileName = Path.GetFileNameWithoutExtension(inputPath) + "_sanitized" + Path.GetExtension(inputPath);
+                        }
+                        
                         string outputPath = Path.Combine(outputDir, fileName);
 
                         await processor.ProcessFileAsync(inputPath, outputPath, null);

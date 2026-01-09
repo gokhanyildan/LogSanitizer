@@ -6,9 +6,14 @@ obj/
 Release/
 LogSanitizer_Build/
 
-# Local logs
+# Local logs & Test Data
 build_log.txt
 build_success_check.txt
 final_test_log.txt
 startup_error.log
 startup_trace.log
+*.txt
+TestLogs/
+LogSanitizer_TestData/
+!GITHUB_INSTRUCTIONS.txt
+!LICENSE.txt

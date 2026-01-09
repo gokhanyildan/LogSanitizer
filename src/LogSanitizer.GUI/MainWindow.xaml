@@ -12,10 +12,12 @@
         TextElement.FontSize="13"
         TextOptions.TextFormattingMode="Ideal"
         TextOptions.TextRenderingMode="Auto"
-        Background="{DynamicResource MaterialDesignPaper}"
+        Background="Transparent"
         FontFamily="{DynamicResource MaterialDesignFont}"
-        Title="LogSanitizer v2.0 - Batch Processor" Height="600" Width="900"
+        Title="LogSanitizer v2.1 - Batch Processor" Height="650" Width="900"
         Icon="{DynamicResource WindowIcon}"
+        WindowStyle="None"
+        AllowsTransparency="True"
         ResizeMode="CanResizeWithGrip">
 
     <Window.Resources>
@@ -32,125 +34,200 @@
         <converters:InverseBooleanConverter x:Key="InverseBoolConverter"/>
     </Window.Resources>
 
-    <Grid Margin="16">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="1.5*"/>
-            <ColumnDefinition Width="1*"/>
-        </Grid.ColumnDefinitions>
+    <WindowChrome.WindowChrome>
+        <WindowChrome CaptionHeight="40"
+                      ResizeBorderThickness="5"
+                      CornerRadius="0"
+                      GlassFrameThickness="0"/>
+    </WindowChrome.WindowChrome>
 
-        <materialDesign:Card Grid.Row="0" Grid.Column="0" Margin="0,0,8,16" Padding="8" VerticalAlignment="Stretch">
-            <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                    <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-
-                <TextBlock Text="Source Files" Style="{StaticResource MaterialDesignHeadline6TextBlock}" Margin="8"/>
-
-                <ListBox Grid.Row="1" ItemsSource="{Binding SourceFiles}" Margin="0,8">
-                    <ListBox.ItemTemplate>
-                        <DataTemplate>
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="FileDocument" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                                <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </DataTemplate>
-                    </ListBox.ItemTemplate>
-                </ListBox>
-
-                <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
-                    <Button Command="{Binding BrowseInputCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FilePlus" Margin="0,0,8,0"/>
-                            <TextBlock Text="Add Files"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding BrowseInputFolderCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="FolderPlus" Margin="0,0,8,0"/>
-                            <TextBlock Text="Add Folder"/>
-                        </StackPanel>
-                    </Button>
-                    <Button Command="{Binding ClearListCommand}" Style="{StaticResource MaterialDesignFlatButton}">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="DeleteSweep" Margin="0,0,8,0"/>
-                            <TextBlock Text="Clear List"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </Grid>
-        </materialDesign:Card>
-
-        <Grid Grid.Row="0" Grid.Column="1" Margin="8,0,0,16">
+    <Border Background="{DynamicResource MaterialDesignPaper}" CornerRadius="8" ClipToBounds="True" BorderThickness="1" BorderBrush="{DynamicResource MaterialDesignDivider}">
+        <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="Auto"/>
-                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/> <!-- Title Bar -->
+                <RowDefinition Height="*"/>    <!-- Content -->
+                <RowDefinition Height="Auto"/> <!-- Footer -->
             </Grid.RowDefinitions>
-            <materialDesign:Card Grid.Row="0" Padding="16" Margin="0,0,0,16">
-                <StackPanel>
-                    <TextBlock Text="Output Destination" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" Margin="0,0,0,8"/>
-                    <Grid>
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
-                        </Grid.ColumnDefinitions>
-                        <TextBox Text="{Binding OutputDirectory}" materialDesign:HintAssist.Hint="Default: Same as source" IsReadOnly="True" VerticalAlignment="Center"/>
-                        <Button Grid.Column="1" Command="{Binding BrowseOutputCommand}" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Select Output Folder">
-                            <materialDesign:PackIcon Kind="FolderOpen"/>
-                        </Button>
-                    </Grid>
-                </StackPanel>
-            </materialDesign:Card>
 
-            <materialDesign:Card Grid.Row="1" Padding="16" VerticalAlignment="Stretch">
-                <Grid>
-                    <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="*"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="Sanitization Rules" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" Margin="0,0,0,8"/>
-                    <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-                        <ItemsControl ItemsSource="{Binding PiiOptions}">
-                            <ItemsControl.ItemTemplate>
-                                <DataTemplate>
-                                    <CheckBox Content="{Binding Name}" 
-                                              IsChecked="{Binding IsSelected}" 
-                                              Margin="0,4"/>
-                                </DataTemplate>
-                            </ItemsControl.ItemTemplate>
-                        </ItemsControl>
-                    </ScrollViewer>
-                </Grid>
-            </materialDesign:Card>
-        </Grid>
-
-        <materialDesign:Card Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Padding="16">
-            <Grid>
+            <!-- Custom Title Bar -->
+            <Grid Grid.Row="0" Height="40" Background="{DynamicResource MaterialDesignPaper}">
                 <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
                     <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
-                    <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource MaterialDesignBody2TextBlock}" Margin="0,0,0,4"/>
-                    <ProgressBar Value="{Binding ProgressValue}" Height="10" Minimum="0" Maximum="100"/>
+                <!-- Icon and Title -->
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0,0,0">
+                    <Image Source="{DynamicResource WindowIcon}" Width="20" Height="20" Margin="0,0,12,0"/>
+                    <TextBlock Text="{Binding Title, RelativeSource={RelativeSource FindAncestor, AncestorType=Window}}" 
+                               VerticalAlignment="Center" 
+                               Style="{StaticResource MaterialDesignSubtitle2TextBlock}"
+                               Opacity="0.8"/>
                 </StackPanel>
 
-                <Button Grid.Column="1" Command="{Binding SanitizeCommand}" 
-                        IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
-                        Style="{StaticResource MaterialDesignRaisedButton}"
-                        Height="50" Width="200" FontSize="16">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="SecurityNetwork" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                        <TextBlock Text="Start Batch" VerticalAlignment="Center"/>
-                    </StackPanel>
-                </Button>
+                <!-- Window Controls -->
+                <StackPanel Grid.Column="2" Orientation="Horizontal" WindowChrome.IsHitTestVisibleInChrome="True">
+                    <!-- About Button (Moved to Header) -->
+                    <Button Click="AboutButton_Click" 
+                            Style="{StaticResource MaterialDesignIconForegroundButton}"
+                            ToolTip="About LogSanitizer"
+                            Width="40" Height="40" Margin="0,0,8,0">
+                        <materialDesign:PackIcon Kind="Information" Width="20" Height="20"/>
+                    </Button>
+
+                    <Button Click="Minimize_Click" Style="{StaticResource MaterialDesignIconForegroundButton}" Width="40" Height="40" ToolTip="Minimize">
+                        <materialDesign:PackIcon Kind="Minus"/>
+                    </Button>
+                    <Button Click="Maximize_Click" Style="{StaticResource MaterialDesignIconForegroundButton}" Width="40" Height="40" ToolTip="Maximize">
+                        <materialDesign:PackIcon Kind="CropSquare"/>
+                    </Button>
+                    <Button Click="Close_Click" Style="{StaticResource MaterialDesignIconForegroundButton}" Width="40" Height="40" ToolTip="Close">
+                        <materialDesign:PackIcon Kind="Close"/>
+                    </Button>
+                </StackPanel>
             </Grid>
-        </materialDesign:Card>
-    </Grid>
+
+            <!-- Main Content Area -->
+            <Grid Grid.Row="1" Margin="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1.5*"/>
+                    <ColumnDefinition Width="1*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Left Column: Source Files -->
+                <materialDesign:Card Grid.Column="0" Margin="0,0,8,16" Padding="8" VerticalAlignment="Stretch">
+                    <Grid>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="*"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Text="Source Files" Style="{StaticResource MaterialDesignHeadline6TextBlock}" Margin="8"/>
+
+                        <ListBox Grid.Row="1" ItemsSource="{Binding SourceFiles}" Margin="0,8">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Orientation="Horizontal">
+                                        <materialDesign:PackIcon Kind="FileDocument" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                                        <TextBlock Text="{Binding}" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+
+                        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,8,0,0">
+                            <Button Command="{Binding BrowseInputCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="FilePlus" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Add Files"/>
+                                </StackPanel>
+                            </Button>
+                            
+                            <Button Command="{Binding BrowseInputFolderCommand}" Style="{StaticResource MaterialDesignOutlinedButton}" Margin="0,0,8,0">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="FolderPlus" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Add Folder"/>
+                                </StackPanel>
+                            </Button>
+                            <Button Command="{Binding ClearListCommand}" Style="{StaticResource MaterialDesignFlatButton}">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="DeleteSweep" Margin="0,0,8,0"/>
+                                    <TextBlock Text="Clear List"/>
+                                </StackPanel>
+                            </Button>
+                        </StackPanel>
+                    </Grid>
+                </materialDesign:Card>
+
+                <!-- Right Column: Output & Rules -->
+                <Grid Grid.Column="1" Margin="8,0,0,16">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                    </Grid.RowDefinitions>
+                    
+                    <materialDesign:Card Grid.Row="0" Padding="16" Margin="0,0,0,16">
+                        <StackPanel>
+                            <TextBlock Text="Output Destination" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" Margin="0,0,0,8"/>
+                            <Grid>
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <TextBox Text="{Binding OutputDirectory}" materialDesign:HintAssist.Hint="Default: Same as source" IsReadOnly="True" VerticalAlignment="Center"/>
+                                <Button Grid.Column="1" Command="{Binding BrowseOutputCommand}" Style="{StaticResource MaterialDesignIconButton}" ToolTip="Select Output Folder">
+                                    <materialDesign:PackIcon Kind="FolderOpen"/>
+                                </Button>
+                            </Grid>
+                            <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
+                                <RadioButton Content="Create New File" 
+                                             IsChecked="{Binding OverwriteOutput, Converter={StaticResource InverseBoolConverter}}" 
+                                             GroupName="OutputMode" Margin="0,0,16,0"
+                                             ToolTip="Creates a new file with '_sanitized' suffix"/>
+                                <RadioButton Content="Overwrite Original" 
+                                             IsChecked="{Binding OverwriteOutput}" 
+                                             GroupName="OutputMode"
+                                             ToolTip="Overwrites the source file directly"/>
+                            </StackPanel>
+                        </StackPanel>
+                    </materialDesign:Card>
+
+                    <materialDesign:Card Grid.Row="1" Padding="16" VerticalAlignment="Stretch">
+                        <Grid>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <TextBlock Text="Sanitization Rules" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" Margin="0,0,0,8"/>
+                            
+                            <CheckBox Grid.Row="1" Content="Select All" 
+                                      IsChecked="{Binding IsAllRulesSelected}" 
+                                      Margin="0,0,0,8" FontWeight="SemiBold"/>
+
+                            <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto">
+                                <ItemsControl ItemsSource="{Binding PiiOptions}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate>
+                                            <CheckBox Content="{Binding Name}" 
+                                                      IsChecked="{Binding IsSelected}" 
+                                                      Margin="0,4"/>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </ScrollViewer>
+                        </Grid>
+                    </materialDesign:Card>
+                </Grid>
+            </Grid>
+
+            <!-- Footer: Status & Start Button -->
+            <materialDesign:Card Grid.Row="2" Margin="16,0,16,16" Padding="16">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                        <TextBlock Text="{Binding StatusMessage}" Style="{StaticResource MaterialDesignBody2TextBlock}" Margin="0,0,0,4"/>
+                        <ProgressBar Value="{Binding ProgressValue}" Height="10" Minimum="0" Maximum="100"/>
+                    </StackPanel>
+
+                    <!-- Start Button (About Button Removed) -->
+                    <Button Grid.Column="1" Command="{Binding SanitizeCommand}" 
+                            IsEnabled="{Binding IsBusy, Converter={StaticResource InverseBoolConverter}}"
+                            Style="{StaticResource MaterialDesignRaisedButton}"
+                            Height="50" Width="200" FontSize="16">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="SecurityNetwork" Width="24" Height="24" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Start Batch" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+                </Grid>
+            </materialDesign:Card>
+        </Grid>
+    </Border>
 </Window>

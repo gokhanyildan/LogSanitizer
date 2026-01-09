@@ -12,5 +12,8 @@ public enum PiiType
     Hostname, // NetBIOS Name (e.g., SERVER01)
     FQDN,      // Fully Qualified Domain Name (e.g., server01.corp.local)
     DomainUser, // Domain\User format
-    Username
+    Username,
+    CertificateThumbprint, // SHA-1 Thumbprint (40 hex chars)
+    BearerToken,
+    ConnectionStringPassword
 }
