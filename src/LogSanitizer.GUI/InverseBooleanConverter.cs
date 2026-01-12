@@ -19,6 +19,9 @@ public class InverseBooleanConverter : IValueConverter
 
     public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
     {
-        throw new NotSupportedException();
+        if (targetType != typeof(bool) && targetType != typeof(bool?))
+            throw new InvalidOperationException("The target must be a boolean");
+
+        return !(bool)value;
     }
 }

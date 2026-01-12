@@ -1,19 +1,28 @@
-bin/
-obj/
+# System & IDE
 .vs/
 *.user
-*.log
+bin/
+obj/
+
+# Build Output & Archives
 Release/
 LogSanitizer_Build/
+TempBuild/
+*.zip
 
-# Local logs & Test Data
+# Logs & Test Data
+*.log
+*.txt
 build_log.txt
 build_success_check.txt
 final_test_log.txt
 startup_error.log
 startup_trace.log
-*.txt
 TestLogs/
 LogSanitizer_TestData/
+
+# Whitelist (İzin verilen özel dosyalar)
 !GITHUB_INSTRUCTIONS.txt
 !LICENSE.txt
+!README.txt
+# README.md zaten txt olmadığı için otomatik dahil olur

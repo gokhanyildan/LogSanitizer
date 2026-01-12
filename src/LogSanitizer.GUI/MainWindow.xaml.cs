@@ -27,7 +27,7 @@ public partial class MainWindow : Window
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();
 
-    private void SourceFiles_DragOver(object sender, DragEventArgs e)
+    private void Files_DragOver(object sender, DragEventArgs e)
     {
         if (e.Data.GetDataPresent(DataFormats.FileDrop))
         {
@@ -40,14 +40,14 @@ public partial class MainWindow : Window
         e.Handled = true;
     }
 
-    private void SourceFiles_Drop(object sender, DragEventArgs e)
+    private void Files_Drop(object sender, DragEventArgs e)
     {
         if (e.Data.GetDataPresent(DataFormats.FileDrop))
         {
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
             if (DataContext is MainViewModel vm)
             {
-                vm.AddSourceFiles(files);
+                vm.AddDroppedFiles(files);
             }
         }
     }

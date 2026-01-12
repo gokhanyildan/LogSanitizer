@@ -97,7 +97,7 @@
 
                 <!-- Left Column: Source Files -->
                 <materialDesign:Card Grid.Column="0" Margin="0,0,8,16" Padding="8" VerticalAlignment="Stretch">
-                    <Grid>
+                    <Grid AllowDrop="True" Drop="Files_Drop" DragOver="Files_DragOver">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="*"/>

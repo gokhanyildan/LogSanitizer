@@ -124,6 +124,11 @@ public class MainViewModel : INotifyPropertyChanged
         );
     }
 
+    public void AddDroppedFiles(string[] paths)
+    {
+        AddSourceFiles(paths);
+    }
+
     public void AddSourceFiles(IEnumerable<string> paths)
     {
         var allowedExtensions = new HashSet<string>(StringComparer.OrdinalIgnoreCase) 
