@@ -126,6 +126,7 @@ public class LogProcessor : IDisposable
 
         var filesToProcess = allFiles
             .Where(f => allowedExtensions.Contains(Path.GetExtension(f).ToLower()))
+            .Where(f => !Path.GetFileName(f).EndsWith("_sanitized.log", StringComparison.OrdinalIgnoreCase))
             .ToArray();
 
         int totalFiles = filesToProcess.Length;
@@ -190,11 +191,7 @@ public class LogProcessor : IDisposable
             }
         }
 
-        // Standard String Sanitization (Fallback or non-JSON)
-        // If Regex matches inside JSON keys, it might corrupt them.
-        // Hashing complex JSON strings line-by-line is safer if structure doesn't matter,
-        // but if detecting JSON, we prefer structure preservation.
-        return SanitizeString(line);
+        return SanitizeContent(line);
     }
 
     // Better recursive approach: Traverse and replace at property/index level
@@ -207,7 +204,7 @@ public class LogProcessor : IDisposable
             {
                 if (kvp.Value is System.Text.Json.Nodes.JsonValue val && val.TryGetValue(out string? strVal))
                 {
-                    var sanitized = SanitizeString(strVal);
+                    var sanitized = SanitizeContent(strVal);
                     if (sanitized != strVal)
                     {
                         // Explicit creation of JsonValue is required
@@ -226,7 +223,7 @@ public class LogProcessor : IDisposable
             {
                 if (arr[i] is System.Text.Json.Nodes.JsonValue val && val.TryGetValue(out string? strVal))
                 {
-                    var sanitized = SanitizeString(strVal);
+                    var sanitized = SanitizeContent(strVal);
                     if (sanitized != strVal)
                     {
                         // Explicit creation of JsonValue is required
@@ -241,20 +238,76 @@ public class LogProcessor : IDisposable
         }
     }
 
-    private string SanitizeString(string input)
+    private string SanitizeContent(string input)
     {
         string current = input;
-        foreach (var entry in _activeRegexes)
+
+        current = RegexDefinitions.IPv6.Replace(current, m =>
         {
-            if (_config.EnableHashing)
-            {
-                current = entry.Value.Replace(current, match => GetConsistentToken(entry.Key, match.Value));
-            }
-            else
-            {
-                current = entry.Value.Replace(current, _config.MaskPlaceholder);
-            }
+            var val = m.Value;
+            if (RegexDefinitions.TimestampHHMMSS.IsMatch(val)) return val;
+            if (val.Length <= 5 || !val.Contains(':')) return val;
+            return GetConsistentToken(PiiType.IPv6Address, val);
+        });
+
+        current = RegexDefinitions.PathWmiSite.Replace(current, m =>
+        {
+            var prefix = m.Groups[1].Value;
+            var code = m.Groups[2].Value;
+            var token = GetKeyToken("SITE", code);
+            return $"{prefix}{token}";
+        });
+
+        current = RegexDefinitions.LdapDomain.Replace(current, "DC=[DOMAIN]");
+
+        current = RegexDefinitions.KeyValueKV.Replace(current, m =>
+        {
+            var key = m.Groups[1].Value;
+            var value = m.Groups[4].Value;
+            var prefix = key.Equals("SiteCode", StringComparison.OrdinalIgnoreCase) || key.Equals("SITE", StringComparison.OrdinalIgnoreCase)
+                ? "SITE"
+                : key.Equals("DatabaseName", StringComparison.OrdinalIgnoreCase)
+                    ? "DB"
+                    : "SRV";
+            var token = GetKeyToken(prefix, value);
+            var tokenOut = (m.Groups[3].Length > 0 || m.Groups[5].Length > 0) ? token.Trim('[', ']') : token;
+            return $"{m.Groups[1].Value}{m.Groups[2].Value}{m.Groups[3].Value}{tokenOut}{m.Groups[5].Value}";
+        });
+
+        current = RegexDefinitions.LdapCnOrDc.Replace(current, m =>
+        {
+            var part = m.Groups[1].Value;
+            var value = m.Groups[2].Value;
+            var token = GetKeyToken("DN", value);
+            return $"{part}={token}";
+        });
+
+        current = RegexDefinitions.SiteCodeWord.Replace(current, "[SITE-CODE]");
+
+        foreach (var entry in _activeRegexes.Where(kv => kv.Key is not PiiType.Hostname and not PiiType.FQDN and not PiiType.DomainUser and not PiiType.Username and not PiiType.IPv6Address))
+        {
+            current = entry.Value.Replace(current, match =>
+                _config.EnableHashing ? GetConsistentToken(entry.Key, match.Value) : _config.MaskPlaceholder);
         }
+
+        foreach (var type in new[] { PiiType.DomainUser, PiiType.Username, PiiType.Hostname, PiiType.FQDN })
+        {
+            if (!_activeRegexes.TryGetValue(type, out var rx)) continue;
+            current = rx.Replace(current, match =>
+            {
+                var value = match.Value;
+                if (value.Contains("[")) return value;
+                var tokens = value.Split(new[] { ' ', '\t', '\r', '\n', '\\', '/', '_' }, StringSplitOptions.RemoveEmptyEntries);
+                if (tokens.Any(t =>
+                {
+                    var cleaned = Regex.Replace(t, @"[^\w]", "");
+                    return _allowlist.Contains(cleaned);
+                })) return value;
+                return _config.EnableHashing ? GetConsistentToken(type, value) : _config.MaskPlaceholder;
+            });
+        }
+
+        current = RegexDefinitions.IPv6TokenTrailing.Replace(current, "");
         return current;
     }
 
@@ -305,6 +358,32 @@ public class LogProcessor : IDisposable
         PiiType.ConnectionStringPassword => "SEC",
         _ => "ID"
     };
+
+    private static readonly HashSet<string> _allowlist = new(StringComparer.OrdinalIgnoreCase)
+    {
+        "Bin","Setup","Bgb","Msi","Exec","Network","Authority","System","Local","Service","Program","Files","Microsoft","Windows","CCM","SMS","Site","Code"
+    };
+
+    private string GetKeyToken(string prefix, string value)
+    {
+        var cacheKey = $"{prefix}|{value}";
+        if (_hashCache.TryGetValue(cacheKey, out var cached))
+            return cached;
+        var bytes = Encoding.UTF8.GetBytes(value + (_config.Salt ?? ""));
+        var sha = _sha256.Value!;
+        var hashBytes = sha.ComputeHash(bytes);
+        var sb = new StringBuilder();
+        for (int i = 0; i < 3; i++) sb.Append(hashBytes[i].ToString("X2"));
+        var token = $"[{prefix}-{sb}]";
+        _hashCache[cacheKey] = token;
+        return token;
+    }
+
+    private static bool ShouldMaskHost(string token)
+    {
+        if (token.Contains('.')) return true;
+        return Regex.IsMatch(token, @"(?=.*[A-Za-z])(?=.*\d)[A-Za-z0-9-]{4,}");
+    }
 
     public void Dispose()
     {

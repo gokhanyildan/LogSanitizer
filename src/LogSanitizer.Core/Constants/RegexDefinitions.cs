@@ -36,10 +36,10 @@ public static class RegexDefinitions
         @"\b[a-zA-Z0-9-]*(?:SW|SRV|SERVER)[a-zA-Z0-9-]*\b",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
 
-    // IPv6: Matches standard IPv6 addresses
+    // IPv6: Strict greedy match to consume the entire address, including optional scope ID (e.g. %14)
     public static readonly Regex IPv6 = new Regex(
-        @"\b(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\b|(?=(?:[0-9a-fA-F]{0,4}:){0,7}[0-9a-fA-F]{0,4}\b)(([0-9a-fA-F]{1,4}:){1,7}:|:(:[0-9a-fA-F]{1,4}){1,7})\b",
-        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+        @"(?:[A-Fa-f0-9]{1,4}:){2,}(?:[A-Fa-f0-9]{1,4}|:)|fe80::[A-Fa-f0-9:%]+",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
 
     // SSN: US Social Security Number (XXX-XX-XXXX)
     public static readonly Regex SSN = new Regex(
@@ -75,4 +75,35 @@ public static class RegexDefinitions
     public static readonly Regex ConnectionStringPassword = new Regex(
         @"(?<=(Password|Pwd|User ID|Uid)=)[^;]*",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
+
+    public static readonly Regex IPv6TokenTrailing = new Regex(
+        @"(?<=\[IP6\-[0-9A-F]{6}\])(?:%[0-9A-Za-z]+|:\d+)",
+        RegexOptions.Compiled | RegexOptions.ExplicitCapture);
+
+    // Path/WMI site code leaks: SMS_XXX or site_XXX
+    public static readonly Regex PathWmiSite = new Regex(
+        @"(SMS_|site_)([a-zA-Z0-9]{3})",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    // Key-Value masking with optional brackets/tight spacing
+    public static readonly Regex KeyValueKV = new Regex(
+        @"(SiteCode|DatabaseName|SQLServerName|Server|SITE)(\s*\]?\s*[:=]\s*)([""'[]?)([^""'\s\],;]+)([""'\]]?)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    public static readonly Regex LdapDomain = new Regex(
+        @"DC=[a-zA-Z0-9-]+",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    public static readonly Regex LdapCnOrDc = new Regex(
+        @"(CN|DC)=([^,;\""\s\)]+)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    // Free-text site code example (heuristic)
+    public static readonly Regex SiteCodeWord = new Regex(
+        @"\bGYC\b",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    public static readonly Regex TimestampHHMMSS = new Regex(
+        @"^\d{2}:\d{2}:\d{2}$",
+        RegexOptions.Compiled);
 }
