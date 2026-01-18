@@ -11,7 +11,7 @@ public static class RegexDefinitions
 
     // Email: Standard email pattern
     public static readonly Regex Email = new Regex(
-        @"\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b",
+        @"\b[A-Za-z0-9._%+-]+@(?!\.)[A-Za-z0-9.-]+(?:\.[A-Za-z]{2,})?\b",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
     // Credit Card: Basic 13-16 digit matching.
@@ -22,7 +22,7 @@ public static class RegexDefinitions
         
     // Phone Number: Generic global phone match
     public static readonly Regex PhoneNumber = new Regex(
-        @"(?<!\d)(?:\+?\d{1,3}[- .]?)?\(?\d{3}\)?[- .]?\d{3}[- .]?\d{4}(?!\d)",
+        @"(?<![A-Za-z0-9])(?:\+|00)?(?:\d{1,3}[\s\.\-])?(?:\(?\d{3}\)?[\s\.\-]\d{3}[\s\.\-]\d{4}|\(?\d{3}\)?[\s\.\-]\d{3}[\s\.\-]\d{2}[\s\.\-]\d{2})(?![A-Za-z0-9])",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
     // FQDN: Matches domain-like structures (e.g., server.internal.corp)
@@ -68,7 +68,7 @@ public static class RegexDefinitions
 
     // Bearer Token: Matches "Bearer <token>"
     public static readonly Regex BearerToken = new Regex(
-        @"Bearer\s+[a-zA-Z0-9\-\._~\+\/]+",
+        @"\bBearer\s+[A-Za-z0-9\-\._~\+\/]+=*",
         RegexOptions.Compiled | RegexOptions.ExplicitCapture | RegexOptions.IgnoreCase);
 
     // Connection String Password: Matches Password=..., Pwd=..., User ID=...
@@ -87,7 +87,7 @@ public static class RegexDefinitions
 
     // Key-Value masking with optional brackets/tight spacing
     public static readonly Regex KeyValueKV = new Regex(
-        @"(SiteCode|DatabaseName|SQLServerName|Server|SITE)(\s*\]?\s*[:=]\s*)([""'[]?)([^""'\s\],;]+)([""'\]]?)",
+        @"(SiteCode|Site|DatabaseName|Database|Catalog|SQLServerName|Server|Source|SITE)(\s*\]?\s*[:=]\s*)([""'[]?)([^""'\s\],;]+)([""'\]]?)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static readonly Regex LdapDomain = new Regex(
@@ -95,12 +95,32 @@ public static class RegexDefinitions
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static readonly Regex LdapCnOrDc = new Regex(
-        @"(CN|DC)=([^,;\""\s\)]+)",
+        @"\b(CN|OU|DC)=([^,]+)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     // Free-text site code example (heuristic)
     public static readonly Regex SiteCodeWord = new Regex(
         @"\bGYC\b",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    public static readonly Regex Url = new Regex(
+        @"\b(https?|ftp)://([a-zA-Z0-9\.-]+)(:[0-9]+)?(/[^ \t\r\n]*)?",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    public static readonly Regex SqlConnectionKVGeneric = new Regex(
+        @"(Data Source|Server|Initial Catalog|Database|User ID|Password)\s*=\s*([^;]+)",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    public static readonly Regex CreditCardGeneric = new Regex(
+        @"\b(?:\d{4}[- ]?){3}\d{4}\b",
+        RegexOptions.Compiled);
+
+    public static readonly Regex TurkishMobilePhone = new Regex(
+        @"(?<![A-Za-z0-9])(?:\+90|0)\s*5\d{2}[\s\.\-]?\d{3}[\s\.\-]?\d{2}[\s\.\-]?\d{2}\b",
+        RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+    public static readonly Regex ApiKey = new Regex(
+        @"\b((?:x-)?api-key)(\s*)([:=])(\s*)([A-Za-z0-9]+)",
         RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     public static readonly Regex TimestampHHMMSS = new Regex(

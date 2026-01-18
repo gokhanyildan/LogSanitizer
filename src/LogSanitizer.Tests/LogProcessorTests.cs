@@ -14,8 +14,7 @@ public class LogProcessorTests
         // Arrange
         var config = new SanitizationConfig
         {
-            EnableHashing = false,
-            MaskPlaceholder = "***",
+            EnableHashing = true,
             TargetPiiTypes = new List<PiiType> { PiiType.Email }
         };
         var processor = new LogProcessor(config);
@@ -25,7 +24,7 @@ public class LogProcessorTests
         var result = processor.SanitizeLine(input);
 
         // Assert
-        result.Should().Be("Contact us at *** for help.");
+        result.Should().MatchRegex(@"Contact us at \[EMAIL-[0-9A-F]{6}\] for help\.");
     }
 
     [Fact]

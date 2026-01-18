@@ -55,7 +55,7 @@ public class RegexValidationTests
         var processor = CreateProcessor(PiiType.Email);
         var input = $"Contact {email} for details.";
         var result = processor.SanitizeLine(input);
-        result.Should().Be("Contact *** for details.");
+        result.Should().MatchRegex(@"Contact \[EMAIL-[0-9A-F]{6}\] for details\.");
     }
 
     [Theory]
@@ -76,7 +76,7 @@ public class RegexValidationTests
         var processor = CreateProcessor(PiiType.CreditCard);
         var input = "Payment via 1234-5678-9012-3456 processed.";
         var result = processor.SanitizeLine(input);
-        result.Should().Be("Payment via *** processed.");
+        result.Should().MatchRegex(@"Payment via \[CC-[0-9A-F]{6}\] processed\.");
     }
 
     [Fact]
@@ -135,10 +135,8 @@ public class RegexValidationTests
         var thumb = "1234567890abcdef1234567890abcdef12345678";
 
         var input = $"User {email} logged in from {ip} using card {cc}. Cert: {thumb}.";
-        var expected = "User [PII] logged in from [PII] using card [PII]. Cert: [PII].";
-
         var result = processor.SanitizeLine(input);
-        result.Should().Be(expected);
+        result.Should().MatchRegex(@"User \[EMAIL-[0-9A-F]{6}\] logged in from \[PII\] using card \[CC-[0-9A-F]{6}\]\. Cert: \[PII\]\.");
     }
 
     [Fact]

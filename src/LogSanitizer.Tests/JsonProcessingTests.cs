@@ -11,7 +11,7 @@ public class JsonProcessingTests : IDisposable
     public JsonProcessingTests()
     {
         var config = SanitizationConfig.Default;
-        config.EnableHashing = false; // Easier assertions
+        config.EnableHashing = true;
         config.DetectJson = true;
         _processor = new LogProcessor(config);
     }
@@ -24,7 +24,8 @@ public class JsonProcessingTests : IDisposable
         
         result.Should().NotContain("test@example.com");
         result.Should().Contain("\"email\":");
-        result.Should().Contain(SanitizationConfig.Default.MaskPlaceholder); // [REDACTED] or default
+        result.Should().Contain("\"email\":");
+        result.Should().MatchRegex(@"\[EMAIL-[0-9A-F]{6}\]");
     }
 
     [Fact]

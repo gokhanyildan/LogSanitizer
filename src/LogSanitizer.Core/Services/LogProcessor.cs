@@ -142,6 +142,20 @@ public class LogProcessor : IDisposable
                 string fileName = Path.GetFileName(file);
                 string outputPath = Path.Combine(outputDir, fileName);
                 
+                if (File.Exists(outputPath) && !_config.OverwriteOutput)
+                {
+                    var name = Path.GetFileNameWithoutExtension(fileName);
+                    var ext = Path.GetExtension(fileName);
+                    string candidate = Path.Combine(outputDir, $"{name}_sanitized{ext}");
+                    int counter = 1;
+                    while (File.Exists(candidate))
+                    {
+                        candidate = Path.Combine(outputDir, $"{name}_sanitized_{counter}{ext}");
+                        counter++;
+                    }
+                    outputPath = candidate;
+                }
+                
                 // We don't report byte-level progress for parallel batch to keep UI responsive
                 // Reporting per-file completion is sufficient
                 await ProcessFileAsync(file, outputPath, null);
@@ -242,6 +256,22 @@ public class LogProcessor : IDisposable
     {
         string current = input;
 
+        current = Regex.Replace(current, "gokhanyildan", "[DOMAIN-LC]", RegexOptions.IgnoreCase);
+
+        current = RegexDefinitions.ApiKey.Replace(current, m =>
+        {
+            var key = m.Groups[1].Value;
+            var ws1 = m.Groups[2].Value;
+            var sep = m.Groups[3].Value;
+            var ws2 = m.Groups[4].Value;
+            var value = m.Groups[5].Value;
+            var token = GetKeyToken("APIKEY", value);
+            return $"{key}{ws1}{sep}{ws2}{token}";
+        });
+
+        current = RegexDefinitions.BearerToken.Replace(current, m =>
+            _config.EnableHashing ? $"Bearer {GetKeyToken("TOKEN", m.Value)}" : _config.MaskPlaceholder);
+
         current = RegexDefinitions.IPv6.Replace(current, m =>
         {
             var val = m.Value;
@@ -264,15 +294,44 @@ public class LogProcessor : IDisposable
         {
             var key = m.Groups[1].Value;
             var value = m.Groups[4].Value;
-            var prefix = key.Equals("SiteCode", StringComparison.OrdinalIgnoreCase) || key.Equals("SITE", StringComparison.OrdinalIgnoreCase)
+            var prefix = key.Equals("SiteCode", StringComparison.OrdinalIgnoreCase) || key.Equals("Site", StringComparison.OrdinalIgnoreCase) || key.Equals("SITE", StringComparison.OrdinalIgnoreCase)
                 ? "SITE"
-                : key.Equals("DatabaseName", StringComparison.OrdinalIgnoreCase)
+                : key.Equals("DatabaseName", StringComparison.OrdinalIgnoreCase) || key.Equals("Database", StringComparison.OrdinalIgnoreCase) || key.Equals("Catalog", StringComparison.OrdinalIgnoreCase)
                     ? "DB"
                     : "SRV";
             var token = GetKeyToken(prefix, value);
             var tokenOut = (m.Groups[3].Length > 0 || m.Groups[5].Length > 0) ? token.Trim('[', ']') : token;
             return $"{m.Groups[1].Value}{m.Groups[2].Value}{m.Groups[3].Value}{tokenOut}{m.Groups[5].Value}";
         });
+
+        current = RegexDefinitions.Url.Replace(current, m =>
+        {
+            var proto = m.Groups[1].Value;
+            var host = m.Groups[2].Value;
+            var port = m.Groups[3].Value;
+            var path = m.Groups[4].Value;
+            var token = GetKeyToken("FQDN", host);
+            return $"{proto}://{token}{port}{path}";
+        });
+
+        current = RegexDefinitions.SqlConnectionKVGeneric.Replace(current, m =>
+        {
+            var key = m.Groups[1].Value;
+            var value = m.Groups[2].Value;
+            string prefix =
+                key.Equals("Data Source", StringComparison.OrdinalIgnoreCase) || key.Equals("Server", StringComparison.OrdinalIgnoreCase)
+                    ? "SRV"
+                : key.Equals("Initial Catalog", StringComparison.OrdinalIgnoreCase) || key.Equals("Database", StringComparison.OrdinalIgnoreCase)
+                    ? "DB"
+                : "SEC";
+            var token = GetKeyToken(prefix, value);
+            return $"{key}={token}";
+        });
+
+        current = RegexDefinitions.Email.Replace(current, m => GetKeyToken("EMAIL", m.Value));
+        current = RegexDefinitions.TurkishMobilePhone.Replace(current, m => GetKeyToken("PHN", m.Value));
+        current = RegexDefinitions.PhoneNumber.Replace(current, m => GetKeyToken("PHN", m.Value));
+        current = RegexDefinitions.CreditCardGeneric.Replace(current, m => GetKeyToken("CC", m.Value));
 
         current = RegexDefinitions.LdapCnOrDc.Replace(current, m =>
         {
@@ -284,7 +343,7 @@ public class LogProcessor : IDisposable
 
         current = RegexDefinitions.SiteCodeWord.Replace(current, "[SITE-CODE]");
 
-        foreach (var entry in _activeRegexes.Where(kv => kv.Key is not PiiType.Hostname and not PiiType.FQDN and not PiiType.DomainUser and not PiiType.Username and not PiiType.IPv6Address))
+        foreach (var entry in _activeRegexes.Where(kv => kv.Key is not PiiType.Hostname and not PiiType.FQDN and not PiiType.DomainUser and not PiiType.Username and not PiiType.IPv6Address and not PiiType.Email and not PiiType.CreditCard and not PiiType.PhoneNumber))
         {
             current = entry.Value.Replace(current, match =>
                 _config.EnableHashing ? GetConsistentToken(entry.Key, match.Value) : _config.MaskPlaceholder);
@@ -361,7 +420,7 @@ public class LogProcessor : IDisposable
 
     private static readonly HashSet<string> _allowlist = new(StringComparer.OrdinalIgnoreCase)
     {
-        "Bin","Setup","Bgb","Msi","Exec","Network","Authority","System","Local","Service","Program","Files","Microsoft","Windows","CCM","SMS","Site","Code"
+        "Manager","Files","System","Authority","Network","Service","Component","Configuration","Microsoft","Windows","Program","Local","AdminUI","Intune","Executive","Monitor"
     };
 
     private string GetKeyToken(string prefix, string value)
