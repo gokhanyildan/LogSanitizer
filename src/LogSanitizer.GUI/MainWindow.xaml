@@ -14,7 +14,7 @@
         TextOptions.TextRenderingMode="Auto"
         Background="Transparent"
         FontFamily="{DynamicResource MaterialDesignFont}"
-        Title="LogSanitizer v2.1 - Batch Processor" Height="650" Width="900"
+        Title="LogSanitizer v3.3" Height="650" Width="900"
         Icon="{DynamicResource WindowIcon}"
         WindowStyle="None"
         AllowsTransparency="True"

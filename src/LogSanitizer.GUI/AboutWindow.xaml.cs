@@ -32,22 +32,15 @@ namespace LogSanitizer.GUI
                       ?? assembly.GetName().Version?.ToString() 
                       ?? "Unknown";
 
-            // If version contains commit hash (e.g., 1.0.0+abc123...), truncate it or just show version
-            if (fullVersion.Contains("+"))
+            var baseVersion = fullVersion.Contains("+") ? fullVersion.Split('+')[0] : fullVersion;
+            var segments = baseVersion.Split('.');
+            if (segments.Length >= 2)
             {
-                var parts = fullVersion.Split('+');
-                if (parts.Length > 1 && parts[1].Length > 7)
-                {
-                    Version = $"{parts[0]} ({parts[1].Substring(0, 7)})";
-                }
-                else
-                {
-                    Version = parts[0];
-                }
+                Version = $"v{segments[0]}.{segments[1]}";
             }
             else
             {
-                Version = fullVersion;
+                Version = $"v{baseVersion}";
             }
 
             Description = assembly.GetCustomAttribute<AssemblyDescriptionAttribute>()?.Description ?? "";

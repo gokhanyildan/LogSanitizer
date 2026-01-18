@@ -20,7 +20,7 @@
             <materialDesign:PackIcon Kind="SecurityNetwork" Width="64" Height="64" HorizontalAlignment="Center" Margin="0,0,0,16" Foreground="{DynamicResource PrimaryHueMidBrush}"/>
             
             <TextBlock Text="{Binding Product}" Style="{StaticResource MaterialDesignHeadline4TextBlock}" HorizontalAlignment="Center" Margin="0,0,0,8"/>
-            <TextBlock Text="{Binding Version, StringFormat='Version {0}'}" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" HorizontalAlignment="Center" Margin="0,0,0,16" Opacity="0.7" TextWrapping="Wrap" TextAlignment="Center"/>
+            <TextBlock Text="{Binding Version}" Style="{StaticResource MaterialDesignSubtitle1TextBlock}" HorizontalAlignment="Center" Margin="0,0,0,16" Opacity="0.7" TextWrapping="Wrap" TextAlignment="Center"/>
             
             <TextBlock Text="{Binding Description}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,0,0,16" MaxWidth="300"/>
             
